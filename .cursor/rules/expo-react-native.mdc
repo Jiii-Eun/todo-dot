@@ -1,0 +1,25 @@
+---
+description: Expo/React Native 코드 스타일, 상태·성능 규칙
+globs: **/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Expo & React Native Rules
+
+## 함수·코드 스타일
+- 함수형 컴포넌트 + hooks만 사용. class component 금지.
+- 비즈니스 로직은 `hooks/` 또는 `lib/`로 분리. 화면 컴포넌트는 UI 조합에 집중.
+- 시간 계산은 `date-fns` 또는 `dayjs` 등 **단일 라이브러리**로 통일 (프로젝트 내 혼용 금지).
+- 매직 넘버 금지: `PRIORITY.LOW | MEDIUM | HIGH`, `REPEAT_DAYS` 등 상수로 정의.
+
+## 상태·성능
+- 집중 화면 카운트다운: `setInterval`/`requestAnimationFrame`은 **ref + 로컬 변수**로 관리. 매 tick마다 전역 store 업데이트 금지.
+- 1초 단위 UI 갱신은 해당 화면 state만 업데이트 (`useState` 또는 `useReducer`).
+- `FlatList`/`SectionList`로 Todo 목록 render. `ScrollView` + map으로 긴 목록 렌더링 금지.
+- `useMemo`: 당일 Todo 정렬, 달성률, 24h 분포도 계산.
+- `useCallback`: Todo 카드 onPress/onToggle 등 자식에 전달하는 핸들러.
+- React Query / Zustand 등 도입 시 **서버 상태 vs UI 상태** 분리 유지.
+
+## 네비게이션
+- 화면: `닉네임 → 메인 → 집중` 정도만. 달력·할 일 추가·Confirm은 **Modal / Bottom Sheet**.
+- `expo-router` 사용 시 `(modals)/` 그룹 또는 `presentation: 'modal'` 패턴 일관 적용.

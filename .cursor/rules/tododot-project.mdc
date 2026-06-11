@@ -1,0 +1,30 @@
+---
+description: .Todo Dot 프로젝트 정의, 핵심 컨셉, MVP 범위
+alwaysApply: true
+---
+
+# .Todo Dot — Project Context
+
+## 슬로건
+"할 일을 관리하는 것이 아니라, 남은 시간을 관리한다."
+
+## 핵심 컨셉
+- Task Management가 아닌 **Time Management** 앱.
+- 할 일마다 **시작/종료 시간** 필수.
+- 집중 화면은 Pomodoro가 아님: 타이머 시작/정지 없이 **현재 시각 ↔ 종료 시각**으로 남은 시간 실시간 계산.
+- 종료 시각 도달 시 `00:00:00`, 초과 시 `+HH:MM:SS` 또는 "N분 초과" 표시.
+
+## 기술 스택
+- Frontend: Expo, React Native, TypeScript
+- Backend: Supabase (PostgreSQL)
+- Mobile Only, SPA 형태, **화면 전환 최소화 + 모달/Bottom Sheet 중심**
+
+## 사용자 시스템
+- 로그인 없음. 최초 실행 시 닉네임 입력 → `닉네임#1234` (Battle.net 방식, tag 자동 생성, 중복 허용).
+- 계정 삭제 시 users + todos + todo_repeat_rules **영구 삭제**.
+
+## MVP 포함
+닉네임 생성, 계정 삭제, 날짜 선택, Todo CRUD, 완료 체크, 반복 일정, 시작/종료 시간, 실시간 남은 시간 화면, 오늘 달성률, 오늘 일정 분포도, **로컬 + 서버 저장**.
+
+## MVP 제외 (명시적 요청 전 구현 금지)
+- 로그인/OAuth, 시간 없는 일정, 웹/데스크톱, Pomodoro 시작/정지/초기화 버튼.

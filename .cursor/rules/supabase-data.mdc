@@ -1,0 +1,27 @@
+---
+description: Supabase 스키마, 쿼리, 로컬+서버 동기화 규칙
+globs: "{supabase/**,**/lib/supabase/**,**/types/**,**/hooks/use*.ts}"
+alwaysApply: false
+---
+
+# Data Layer Rules
+
+## 스키마 (변경 시 migration + 타입 동기화)
+- `users`: id, nickname, tag, created_at
+- `todos`: id, user_id, title, description, priority, start_time, end_time, target_date, is_completed, created_at, updated_at
+- `todo_repeat_rules`: id, todo_id, repeat_enabled, repeat_days (jsonb), repeat_date, created_at
+
+## 쿼리 규칙
+- 모든 todo 쿼리는 `user_id` + `target_date` 필터 필수.
+- 메인 목록 정렬: 1) start_time ASC, 2) created_at ASC (시간 없는 일정은 MVP 제외).
+- 반복 일정 생성/삭제 시 `todo_repeat_rules`와 todos를 트랜잭션 또는 RPC로 일관 처리.
+- RLS: anon 사용자도 자신의 user_id row만 접근 (device/local user id 기반).
+
+## 로컬 + 서버
+- Optimistic UI 후 Supabase 반영. 실패 시 rollback + 사용자 알림.
+- 오프라인/재시도 전략은 `AsyncStorage` 캐시 + 재동기화 훅으로 캡슐화.
+
+## 검증
+- `end_time > start_time` (같은 target_date 기준).
+- title 필수, description 선택.
+- priority: 0=낮음, 1=보통, 2=높음 (DB integer와 UI enum 1:1 매핑).

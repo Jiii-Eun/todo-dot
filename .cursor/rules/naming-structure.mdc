@@ -1,0 +1,45 @@
+---
+description: 파일명·디렉토리 구조 컨벤션
+alwaysApply: true
+---
+
+# Naming & Directory Conventions
+
+## 디렉토리 (Expo Router 기준 예시)
+
+```
+app/
+  index.tsx              # 닉네임 or redirect
+  (main)/index.tsx       # 메인
+  focus/[todoId].tsx     # 집중 화면
+  _layout.tsx
+components/
+  ui/                    # Button, Modal, ProgressBar
+  todo/                  # TodoCard, TodoForm
+  charts/                # ActivityBarChart
+hooks/
+  useTodos.ts
+  useCountdown.ts
+  useUser.ts
+lib/
+  supabase/client.ts
+  supabase/todos.ts
+  time/calculateRemaining.ts
+  time/sortTodos.ts
+types/
+  todo.ts
+  user.ts
+constants/
+  theme.ts
+  priority.ts
+```
+
+## 파일명
+- 컴포넌트: PascalCase (`TodoCard.tsx`)
+- hooks: camelCase + `use` prefix (`useCountdown.ts`)
+- lib/utils: camelCase (`formatTimeRange.ts`)
+- 타입 파일: domain 단위 (`todo.ts`, `user.ts`)
+
+## Import
+- `@/` path alias 사용 (Expo tsconfig paths와 일치).
+- barrel `index.ts`는 `components/ui` 수준까지만. 깊은 re-export 남용 금지.

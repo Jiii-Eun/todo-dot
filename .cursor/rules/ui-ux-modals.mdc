@@ -1,0 +1,28 @@
+---
+description: 화면별 UI/UX, 공통 컴포넌트, 디자인 토큰
+globs: "{app/**,components/**,constants/theme.ts}"
+alwaysApply: false
+---
+
+# UI / UX Rules
+
+## 디자인
+- Primary: purple 계열 (FAB, CTA, progress, 선택 날짜).
+- 완료 Todo: checkbox + **취소선(strikethrough)**.
+- 중요도: 낮음 ☆ / 보통 ⭐ / 높음 ⭐⭐ (아이콘 또는 Text, 접근성 label 필수).
+
+## 화면별 필수 동작
+| 화면 | 핵심 |
+|------|------|
+| 닉네임 입력 | 2–12자 검증, tag 자동 생성 안내 |
+| 메인 | 날짜 `< >` 이동, 달성률 %, 24h 막대 그래프, FAB |
+| 달력 | Bottom Sheet, 페이지 이동 없음 |
+| 할 일 모달 | 시간 검증, 반복 ON 시 요일·종료일 노출, 총 duration 표시 |
+| 집중 | 원형 progress, HH:MM:SS, **시작/정지/완료 버튼 없음** |
+| Confirm | 재사용 `<ConfirmModal title description confirmText cancelText />` |
+
+## 공통 컴포넌트 (우선 재사용)
+- `ConfirmModal`, `TodoCard`, `ProgressBar`, `ActivityBarChart`, `CircularCountdown`, `PriorityPicker`, `TimeRangePicker`, `RepeatDayPicker`
+
+## 접근성
+- 터치 영역 최소 44pt. 아이콘-only 버튼에 `accessibilityLabel` 필수.
