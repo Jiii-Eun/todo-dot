@@ -24,6 +24,7 @@ import {
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ScreenEntrance } from '@/components/ui/ScreenEntrance';
 import { Button } from '@/components/ui/Button';
 
 import { Logo } from '@/components/ui/Logo';
@@ -145,7 +146,7 @@ export default function NicknameScreen() {
   return (
 
     <SafeAreaView style={styles.safe}>
-
+      <ScreenEntrance style={styles.flex}>
       <KeyboardAvoidingView
 
         style={styles.flex}
@@ -287,7 +288,7 @@ export default function NicknameScreen() {
         </ScrollView>
 
       </KeyboardAvoidingView>
-
+      </ScreenEntrance>
     </SafeAreaView>
 
   );

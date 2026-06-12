@@ -25,7 +25,12 @@
       "package": "com.tododot.app"
     },
     "plugins": [
-      "expo-router",
+      [
+        "expo-router",
+        {
+          "sitemap": false
+        }
+      ],
       "@react-native-community/datetimepicker"
     ],
     "experiments": {

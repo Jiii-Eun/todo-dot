@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { navigateToMainScreen } from '@/lib/navigation/routes';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CircularCountdown } from '@/components/focus/CircularCountdown';
+import { ScreenEntrance } from '@/components/ui/ScreenEntrance';
 import { PRIORITY_STARS } from '@/constants/priority';
 import { colors, spacing } from '@/constants/theme';
 import { useTodoContext } from '@/contexts/TodoProvider';
@@ -57,6 +58,7 @@ export default function FocusScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <ScreenEntrance style={styles.screen}>
       <View style={styles.header}>
         <Pressable onPress={handleGoBack} accessibilityLabel="뒤로 가기">
           <Text style={styles.back}>{'←'}</Text>
@@ -94,6 +96,7 @@ export default function FocusScreen() {
           <Text style={styles.timeValue}>{todo.endTime}</Text>
         </View>
       </View>
+      </ScreenEntrance>
     </SafeAreaView>
   );
 }
@@ -103,6 +106,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
     paddingHorizontal: spacing.lg,
+  },
+  screen: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',

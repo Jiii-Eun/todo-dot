@@ -1,4 +1,5 @@
-import { Modal, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { AnimatedModal } from '@/components/ui/AnimatedModal';
 import { Button } from '@/components/ui/Button';
 import { colors, radius, spacing } from '@/constants/theme';
 
@@ -26,39 +27,29 @@ export function ConfirmModal({
   destructive = true,
 }: ConfirmModalProps) {
   return (
-    <Modal transparent visible={visible} animationType="fade" onRequestClose={onCancel}>
-      <View style={styles.overlay}>
-        <View style={styles.card}>
-          <Text style={styles.icon}>{destructive ? '⚠️' : 'ℹ️'}</Text>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.description}>{description}</Text>
-          <View style={styles.actions}>
-            <Button label={cancelText} onPress={onCancel} variant="secondary" style={styles.action} />
-            <Button
-              label={confirmText}
-              onPress={onConfirm}
-              variant={destructive ? 'danger' : 'primary'}
-              disabled={confirmDisabled}
-              style={styles.action}
-            />
-          </View>
+    <AnimatedModal visible={visible} onRequestClose={onCancel} variant="fade">
+      <View style={styles.card}>
+        <Text style={styles.icon}>{destructive ? '⚠️' : 'ℹ️'}</Text>
+        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.description}>{description}</Text>
+        <View style={styles.actions}>
+          <Button label={cancelText} onPress={onCancel} variant="secondary" style={styles.action} />
+          <Button
+            label={confirmText}
+            onPress={onConfirm}
+            variant={destructive ? 'danger' : 'primary'}
+            disabled={confirmDisabled}
+            style={styles.action}
+          />
         </View>
       </View>
-    </Modal>
+    </AnimatedModal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: colors.overlay,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.lg,
-  },
   card: {
     width: '100%',
-    maxWidth: 360,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     padding: spacing.lg,

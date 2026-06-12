@@ -20,6 +20,7 @@ export function TodoCard({ todo, onToggle, onEdit, onDelete, onPress }: TodoCard
       onPress={() => onPress(todo)}
       style={({ pressed }) => [
         styles.card,
+        cardShadow,
         { borderLeftColor: borderColor },
         pressed && styles.pressed,
       ]}
@@ -72,7 +73,6 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     marginBottom: spacing.sm,
     borderLeftWidth: 4,
-    ...cardShadow,
   },
   pressed: {
     opacity: 0.92,

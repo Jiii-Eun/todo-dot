@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react';
 
 import {
 
-  Modal,
-
   Pressable,
 
   ScrollView,
@@ -22,6 +20,7 @@ import {
 
 import { Button } from '@/components/ui/Button';
 
+import { AnimatedModal } from '@/components/ui/AnimatedModal';
 import { DatePickerSheet } from '@/components/ui/DatePickerSheet';
 
 import { TimePickerSheet } from '@/components/ui/TimePickerSheet';
@@ -256,7 +255,7 @@ export function TodoFormModal({
 
   return (
 
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <AnimatedModal visible={visible} onRequestClose={onClose} variant="slide" dismissOnOverlayPress={false}>
 
       <View style={styles.container}>
 
@@ -540,7 +539,7 @@ export function TodoFormModal({
 
       />
 
-    </Modal>
+    </AnimatedModal>
 
   );
 

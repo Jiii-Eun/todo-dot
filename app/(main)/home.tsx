@@ -17,6 +17,7 @@ import { TodoCard } from '@/components/todo/TodoCard';
 import { TodoFormModal } from '@/components/todo/TodoFormModal';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Logo } from '@/components/ui/Logo';
+import { ScreenEntrance } from '@/components/ui/ScreenEntrance';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { colors, spacing } from '@/constants/theme';
 import { useTodoContext } from '@/contexts/TodoProvider';
@@ -120,6 +121,7 @@ export default function MainScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <ScreenEntrance style={styles.screen}>
       <View style={styles.header}>
         <Logo size="sm" />
         <Text style={styles.userName}>{displayName}</Text>
@@ -189,6 +191,7 @@ export default function MainScreen() {
           </View>
         }
       />
+      </ScreenEntrance>
 
       <CalendarSheet
         visible={calendarVisible}
@@ -249,6 +252,9 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  screen: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',

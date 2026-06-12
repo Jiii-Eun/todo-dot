@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { CalendarGrid } from '@/components/calendar/CalendarGrid';
+import { AnimatedModal } from '@/components/ui/AnimatedModal';
 import { Button } from '@/components/ui/Button';
 import { colors, radius, spacing } from '@/constants/theme';
 import { toDateString } from '@/lib/time/formatTime';
@@ -38,36 +39,29 @@ export function DatePickerSheet({
   };
 
   return (
-    <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={styles.sheet} onPress={(event) => event.stopPropagation()}>
-          <View style={styles.handle} />
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.selected}>{toDateString(draft)}</Text>
+    <AnimatedModal visible={visible} onRequestClose={onClose} variant="sheet">
+      <Pressable style={styles.sheet} onPress={(event) => event.stopPropagation()}>
+        <View style={styles.handle} />
+        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.selected}>{toDateString(draft)}</Text>
 
-          <CalendarGrid
-            selectedDate={draft}
-            onSelectDate={handleDayPress}
-            minSelectableDate={minDate}
-            maxHeightRatio={0.38}
-          />
+        <CalendarGrid
+          selectedDate={draft}
+          onSelectDate={handleDayPress}
+          minSelectableDate={minDate}
+          maxHeightRatio={0.38}
+        />
 
-          <View style={styles.actions}>
-            <Button label="취소" variant="secondary" onPress={onClose} style={styles.action} />
-            <Button label="확인" onPress={handleConfirm} style={styles.action} />
-          </View>
-        </Pressable>
+        <View style={styles.actions}>
+          <Button label="취소" variant="secondary" onPress={onClose} style={styles.action} />
+          <Button label="확인" onPress={handleConfirm} style={styles.action} />
+        </View>
       </Pressable>
-    </Modal>
+    </AnimatedModal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: colors.overlay,
-  },
   sheet: {
     backgroundColor: colors.surface,
     borderTopLeftRadius: radius.xl,
