@@ -53,6 +53,15 @@ export function calculateCountdown(
   const totalSeconds = Math.max(1, differenceInSeconds(endTime, startTime));
   const remainingSeconds = differenceInSeconds(endTime, now);
 
+  if (isBefore(now, startTime)) {
+    return {
+      display: formatSeconds(Math.max(0, remainingSeconds)),
+      progress: 0,
+      isOvertime: false,
+      isFinished: false,
+    };
+  }
+
   if (remainingSeconds > 0) {
     return {
       display: formatSeconds(remainingSeconds),

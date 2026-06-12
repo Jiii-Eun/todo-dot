@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -34,7 +34,7 @@ export function TimePickerSheet({
   const [draft, setDraft] = useState(value);
   const [error, setError] = useState('');
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (visible) {
       setDraft(value);
       setError('');
@@ -60,7 +60,9 @@ export function TimePickerSheet({
           <View style={styles.handle} />
           <Text style={styles.title}>{title}</Text>
 
-          <ThemedTimePicker value={draft} minTime={minTime} onChange={setDraft} />
+          {visible ? (
+            <ThemedTimePicker active value={draft} minTime={minTime} onChange={setDraft} />
+          ) : null}
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 

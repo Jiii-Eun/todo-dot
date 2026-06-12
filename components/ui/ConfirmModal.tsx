@@ -8,6 +8,7 @@ interface ConfirmModalProps {
   description: string;
   confirmText?: string;
   cancelText?: string;
+  confirmDisabled?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
   destructive?: boolean;
@@ -19,6 +20,7 @@ export function ConfirmModal({
   description,
   confirmText = '삭제',
   cancelText = '취소',
+  confirmDisabled = false,
   onConfirm,
   onCancel,
   destructive = true,
@@ -36,6 +38,7 @@ export function ConfirmModal({
               label={confirmText}
               onPress={onConfirm}
               variant={destructive ? 'danger' : 'primary'}
+              disabled={confirmDisabled}
               style={styles.action}
             />
           </View>

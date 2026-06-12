@@ -45,21 +45,18 @@ import {
 import { colors, radius, spacing } from '@/constants/theme';
 
 import { addMinutesToTime, isTimeAfter } from '@/lib/time/compareTime';
-import { formatDurationMinutes, formatTime, toDateString } from '@/lib/time/formatTime';
+import { formatDurationMinutes, formatTime, parseDateString, toDateString } from '@/lib/time/formatTime';
 
 import {
-
   validateRepeatDays,
-
+  validateRepeatEndDate,
   validateTodoTimes,
-
   validateTodoTitle,
-
 } from '@/lib/validation/todo';
 
 import type { Todo, TodoFormValues } from '@/types/todo';
 
-import { createDefaultFormValues } from '@/contexts/TodoProvider';
+import { createDefaultFormValues, useTodoContext } from '@/contexts/TodoProvider';
 
 
 
@@ -97,6 +94,8 @@ export function TodoFormModal({
 
 }: TodoFormModalProps) {
 
+  const { getRepeatRuleForSeries } = useTodoContext();
+
   const [form, setForm] = useState<TodoFormValues>(() => createDefaultFormValues(selectedDate));
 
   const [error, setError] = useState('');
@@ -133,6 +132,10 @@ export function TodoFormModal({
 
       end.setHours(eh, em, 0, 0);
 
+      const seriesId = editingTodo.seriesId ?? editingTodo.id;
+
+      const repeatRule = getRepeatRuleForSeries(seriesId);
+
 
 
       setForm({
@@ -147,13 +150,13 @@ export function TodoFormModal({
 
         endTime: end,
 
-        targetDate: editingTodo.targetDate,
+        targetDate: toDateString(selectedDate),
 
         repeatEnabled: Boolean(editingTodo.seriesId),
 
-        repeatDays: [],
+        repeatDays: repeatRule?.repeatDays ?? [],
 
-        repeatDate: null,
+        repeatDate: repeatRule?.repeatDate ? parseDateString(repeatRule.repeatDate) : null,
 
       });
 
@@ -165,7 +168,7 @@ export function TodoFormModal({
 
     setError('');
 
-  }, [visible, editingTodo, selectedDate]);
+  }, [visible, editingTodo, selectedDate, getRepeatRuleForSeries]);
 
 
 
@@ -225,22 +228,28 @@ export function TodoFormModal({
 
     }
 
+    const repeatEndValidation = validateRepeatEndDate(form.repeatEnabled, form.repeatDate, selectedDate);
+
+    if (!repeatEndValidation.valid) {
+
+      setError(repeatEndValidation.message);
+
+      return;
+
+    }
+
 
 
     setSaving(true);
 
     try {
-
       await onSave({ ...form, targetDate: toDateString(selectedDate) });
-
       onClose();
-
+    } catch {
+      setError('저장에 실패했습니다. 다시 시도해 주세요.');
     } finally {
-
       setSaving(false);
-
     }
-
   };
 
 
@@ -423,7 +432,7 @@ export function TodoFormModal({
 
 
 
-              <Text style={styles.label}>반복 날짜 (선택)</Text>
+              <Text style={styles.label}>종료일</Text>
 
               <Pressable style={styles.timeButton} onPress={() => setPickerTarget('repeatEnd')}>
 
@@ -434,6 +443,12 @@ export function TodoFormModal({
                 </Text>
 
               </Pressable>
+
+              <Text style={styles.repeatHint}>
+
+                선택한 요일마다 반복되며, 종료일 이후에는 일정이 생성되지 않습니다.
+
+              </Text>
 
             </>
 
@@ -515,7 +530,7 @@ export function TodoFormModal({
 
         value={form.repeatDate ?? selectedDate}
 
-        title="반복 종료일"
+        title="종료일"
 
         minDate={selectedDate}
 
@@ -778,6 +793,18 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
 
     fontWeight: '700',
+
+  },
+
+  repeatHint: {
+
+    marginTop: spacing.sm,
+
+    fontSize: 12,
+
+    color: colors.textMuted,
+
+    lineHeight: 18,
 
   },
 

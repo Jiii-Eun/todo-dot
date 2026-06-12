@@ -33,6 +33,7 @@ interface TodoContextValue {
   todos: Todo[];
   isLoading: boolean;
   getTodosForDate: (date: Date) => Todo[];
+  getRepeatRuleForSeries: (seriesId: string) => TodoRepeatRule | null;
   createTodo: (values: TodoFormValues) => Promise<void>;
   updateTodo: (id: string, values: TodoFormValues) => Promise<void>;
   toggleComplete: (id: string) => Promise<void>;
@@ -91,10 +92,15 @@ export function TodoProvider({ children }: { children: ReactNode }) {
 
     await saveTodos(nextTodos);
     await saveRepeatRules(nextRules);
-    await deleteTodosFromServer(removedTodoIds, removedRuleIds);
-    await syncTodosToServer(nextTodos, nextRules);
     setTodos(nextTodos);
     setRepeatRules(nextRules);
+
+    try {
+      await deleteTodosFromServer(removedTodoIds, removedRuleIds);
+      await syncTodosToServer(nextTodos, nextRules);
+    } catch (error) {
+      console.warn('[TodoProvider] Firebase sync failed:', error);
+    }
   }, [todos, repeatRules]);
 
   const refreshTodos = useCallback(async () => {
@@ -128,6 +134,11 @@ export function TodoProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refreshTodos();
   }, [refreshTodos]);
+
+  const getRepeatRuleForSeries = useCallback(
+    (seriesId: string) => repeatRules.find((rule) => rule.todoId === seriesId) ?? null,
+    [repeatRules],
+  );
 
   const getTodosForDate = useCallback(
     (date: Date) => {
@@ -172,31 +183,49 @@ export function TodoProvider({ children }: { children: ReactNode }) {
       const existing = todos.find((t) => t.id === id);
       if (!existing) return;
 
-      const seriesId = existing.seriesId ?? existing.id;
-      const remaining = todos.filter(
-        (t) => t.seriesId !== seriesId && t.id !== seriesId,
-      );
-      const remainingRules = repeatRules.filter((r) => r.todoId !== seriesId && r.todoId !== id);
+      const anchorDateStr = values.targetDate;
 
-      const updated = buildTodoFromForm(values, user.id, {
-        ...existing,
-        id: seriesId,
-        seriesId: values.repeatEnabled ? seriesId : null,
-      });
-
-      let nextTodos = [...remaining];
-      let nextRules = [...remainingRules];
-
-      if (values.repeatEnabled) {
-        const rule = buildRepeatRule(seriesId, values);
-        const occurrences = buildRepeatOccurrences(updated, rule);
-        nextTodos = [...nextTodos, ...occurrences];
-        nextRules = [...nextRules, rule];
-      } else {
-        nextTodos = [...nextTodos, updated];
+      if (!existing.seriesId && !values.repeatEnabled) {
+        const nextTodos = todos.map((todo) =>
+          todo.id === id ? buildTodoFromForm(values, user.id, existing) : todo,
+        );
+        await persist(nextTodos, repeatRules);
+        return;
       }
 
-      await persist(nextTodos, nextRules);
+      const seriesId = existing.seriesId ?? existing.id;
+      const existingRule = repeatRules.find((rule) => rule.todoId === seriesId);
+      const seriesRoot = todos.find((todo) => todo.id === seriesId) ?? existing;
+
+      const outsideSeries = todos.filter(
+        (todo) => todo.seriesId !== seriesId && todo.id !== seriesId,
+      );
+      const pastSeriesTodos = todos.filter(
+        (todo) =>
+          (todo.seriesId === seriesId || todo.id === seriesId) && todo.targetDate < anchorDateStr,
+      );
+      const nextRules = repeatRules.filter((rule) => rule.todoId !== seriesId);
+
+      if (!values.repeatEnabled) {
+        const single = buildTodoFromForm(values, user.id, {
+          ...existing,
+          seriesId: null,
+          targetDate: anchorDateStr,
+        });
+        await persist([...outsideSeries, ...pastSeriesTodos, single], nextRules);
+        return;
+      }
+
+      const updated = buildTodoFromForm(values, user.id, {
+        ...seriesRoot,
+        id: seriesId,
+        seriesId,
+        targetDate: anchorDateStr,
+      });
+      const rule = buildRepeatRule(seriesId, values, existingRule);
+      const occurrences = buildRepeatOccurrences(updated, rule);
+
+      await persist([...outsideSeries, ...pastSeriesTodos, ...occurrences], [...nextRules, rule]);
     },
     [user, todos, repeatRules, persist],
   );
@@ -243,6 +272,7 @@ export function TodoProvider({ children }: { children: ReactNode }) {
       todos,
       isLoading,
       getTodosForDate,
+      getRepeatRuleForSeries,
       createTodo,
       updateTodo,
       toggleComplete,
@@ -253,6 +283,7 @@ export function TodoProvider({ children }: { children: ReactNode }) {
       todos,
       isLoading,
       getTodosForDate,
+      getRepeatRuleForSeries,
       createTodo,
       updateTodo,
       toggleComplete,

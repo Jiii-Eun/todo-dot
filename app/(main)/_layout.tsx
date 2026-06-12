@@ -1,5 +1,12 @@
-import { Stack } from 'expo-router';
+import { Slot } from 'expo-router';
+import { useUserContext } from '@/contexts/UserProvider';
 
 export default function MainLayout() {
-  return <Stack screenOptions={{ headerShown: false }} />;
+  const { user, isLoading } = useUserContext();
+
+  if (isLoading || !user) {
+    return null;
+  }
+
+  return <Slot />;
 }

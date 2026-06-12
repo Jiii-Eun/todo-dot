@@ -16,7 +16,6 @@ import {
 } from '@/lib/validation/nickname';
 import {
   clearAllData,
-  clearUser,
   loadUser,
   saveUser,
 } from '@/lib/local/storage';
@@ -30,14 +29,18 @@ import { isFirebaseConfigured } from '@/lib/firebase/client';
 import type { User } from '@/types/user';
 import { formatUserDisplay } from '@/types/user';
 
+export type EntryMode = 'create' | 'login';
+
 interface UserContextValue {
   user: User | null;
   isLoading: boolean;
   displayName: string;
+  entryMode: EntryMode;
+  setEntryMode: (mode: EntryMode) => void;
   createUser: (nickname: string) => Promise<{ success: boolean; message: string }>;
   loginUser: (displayName: string) => Promise<{ success: boolean; message: string }>;
-  logout: () => Promise<void>;
-  deleteAccount: () => Promise<void>;
+  switchAccount: () => Promise<void>;
+  deleteAccount: () => Promise<{ success: boolean; message: string }>;
   refreshUser: () => Promise<void>;
 }
 
@@ -46,17 +49,26 @@ const UserContext = createContext<UserContextValue | null>(null);
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [entryMode, setEntryMode] = useState<EntryMode>('create');
 
   const refreshUser = useCallback(async () => {
     setIsLoading(true);
     try {
       const localUser = await loadUser();
-      if (localUser) {
-        const remoteUser = await fetchUserFromServer(localUser.id);
-        setUser(remoteUser ?? localUser);
-      } else {
+      if (!localUser) {
         setUser(null);
+        return;
       }
+
+      const remoteUser = await fetchUserFromServer(localUser.id);
+
+      const stillLocal = await loadUser();
+      if (!stillLocal || stillLocal.id !== localUser.id) {
+        setUser(null);
+        return;
+      }
+
+      setUser(remoteUser ?? localUser);
     } finally {
       setIsLoading(false);
     }
@@ -113,18 +125,27 @@ export function UserProvider({ children }: { children: ReactNode }) {
     return { success: true, message: '' };
   }, []);
 
-  const logout = useCallback(async () => {
+  const switchAccount = useCallback(async () => {
     await clearAllData();
     setUser(null);
   }, []);
 
   const deleteAccount = useCallback(async () => {
-    if (user) {
-      await deleteUserFromServer(user.id);
+    if (!user) {
+      return { success: false, message: '로그인된 계정이 없습니다.' };
     }
-    await clearAllData();
-    await clearUser();
-    setUser(null);
+
+    try {
+      await deleteUserFromServer(user.id);
+      await clearAllData();
+      setUser(null);
+      return { success: true, message: '' };
+    } catch {
+      return {
+        success: false,
+        message: '계정 삭제에 실패했습니다. 네트워크 연결을 확인해 주세요.',
+      };
+    }
   }, [user]);
 
   const displayName = useMemo(
@@ -137,13 +158,25 @@ export function UserProvider({ children }: { children: ReactNode }) {
       user,
       isLoading,
       displayName,
+      entryMode,
+      setEntryMode,
       createUser,
       loginUser,
-      logout,
+      switchAccount,
       deleteAccount,
       refreshUser,
     }),
-    [user, isLoading, displayName, createUser, loginUser, logout, deleteAccount, refreshUser],
+    [
+      user,
+      isLoading,
+      displayName,
+      entryMode,
+      createUser,
+      loginUser,
+      switchAccount,
+      deleteAccount,
+      refreshUser,
+    ],
   );
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

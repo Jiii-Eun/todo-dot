@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing } from '@/constants/theme';
 import { applyTimeToDate, compareTimeOnly } from '@/lib/time/compareTime';
@@ -7,10 +7,13 @@ import { formatTime } from '@/lib/time/formatTime';
 const HOURS = Array.from({ length: 24 }, (_, index) => index);
 const MINUTES = Array.from({ length: 60 }, (_, index) => index);
 const ITEM_HEIGHT = 44;
+const VISIBLE_ROWS = 5;
 
 interface ThemedTimePickerProps {
   value: Date;
   minTime?: Date;
+  /** true when parent sheet/modal is open — initial scroll runs only on open */
+  active?: boolean;
   onChange: (date: Date) => void;
 }
 
@@ -30,16 +33,27 @@ function isHourDisabled(hour: number, minTime?: Date): boolean {
   return compareTimeOnly(lastMinuteInHour, minTime) <= 0;
 }
 
-export function ThemedTimePicker({ value, minTime, onChange }: ThemedTimePickerProps) {
+function scrollToIndex(ref: RefObject<ScrollView | null>, index: number) {
+  const offset = Math.max(0, index * ITEM_HEIGHT - ITEM_HEIGHT * Math.floor(VISIBLE_ROWS / 2));
+  ref.current?.scrollTo({ y: offset, animated: false });
+}
+
+export function ThemedTimePicker({ value, minTime, active = true, onChange }: ThemedTimePickerProps) {
   const hourRef = useRef<ScrollView>(null);
   const minuteRef = useRef<ScrollView>(null);
   const hour = value.getHours();
   const minute = value.getMinutes();
 
   useEffect(() => {
-    hourRef.current?.scrollTo({ y: Math.max(0, hour * ITEM_HEIGHT - ITEM_HEIGHT * 2), animated: false });
-    minuteRef.current?.scrollTo({ y: Math.max(0, minute * ITEM_HEIGHT - ITEM_HEIGHT * 2), animated: false });
-  }, [hour, minute, value]);
+    if (!active) return;
+    const frame = requestAnimationFrame(() => {
+      scrollToIndex(hourRef, value.getHours());
+      scrollToIndex(minuteRef, value.getMinutes());
+    });
+    return () => cancelAnimationFrame(frame);
+    // Scroll only when the sheet opens — not when hour/minute change from taps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]);
 
   const selectHour = (nextHour: number) => {
     if (isHourDisabled(nextHour, minTime)) return;
@@ -60,11 +74,14 @@ export function ThemedTimePicker({ value, minTime, onChange }: ThemedTimePickerP
       <Text style={styles.preview}>{formatTime(value)}</Text>
 
       <View style={styles.pickerFrame}>
-        <View style={styles.selectionHighlight} pointerEvents="none" />
+        <View style={styles.labelRow}>
+          <Text style={styles.columnLabel}>시</Text>
+          <Text style={styles.separatorLabel}>:</Text>
+          <Text style={styles.columnLabel}>분</Text>
+        </View>
 
         <View style={styles.columns}>
           <View style={styles.column}>
-            <Text style={styles.columnLabel}>시</Text>
             <ScrollView
               ref={hourRef}
               style={styles.scroll}
@@ -82,7 +99,13 @@ export function ThemedTimePicker({ value, minTime, onChange }: ThemedTimePickerP
                     onPress={() => selectHour(item)}
                     style={[styles.item, selected && styles.itemSelected, disabled && styles.itemDisabled]}
                   >
-                    <Text style={[styles.itemText, selected && styles.itemTextSelected, disabled && styles.itemTextDisabled]}>
+                    <Text
+                      style={[
+                        styles.itemText,
+                        selected && styles.itemTextSelected,
+                        disabled && styles.itemTextDisabled,
+                      ]}
+                    >
                       {pad(item)}
                     </Text>
                   </Pressable>
@@ -91,10 +114,7 @@ export function ThemedTimePicker({ value, minTime, onChange }: ThemedTimePickerP
             </ScrollView>
           </View>
 
-          <Text style={styles.separator}>:</Text>
-
           <View style={styles.column}>
-            <Text style={styles.columnLabel}>분</Text>
             <ScrollView
               ref={minuteRef}
               style={styles.scroll}
@@ -112,7 +132,13 @@ export function ThemedTimePicker({ value, minTime, onChange }: ThemedTimePickerP
                     onPress={() => selectMinute(item)}
                     style={[styles.item, selected && styles.itemSelected, disabled && styles.itemDisabled]}
                   >
-                    <Text style={[styles.itemText, selected && styles.itemTextSelected, disabled && styles.itemTextDisabled]}>
+                    <Text
+                      style={[
+                        styles.itemText,
+                        selected && styles.itemTextSelected,
+                        disabled && styles.itemTextDisabled,
+                      ]}
+                    >
                       {pad(item)}
                     </Text>
                   </Pressable>
@@ -141,54 +167,49 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   pickerFrame: {
-    position: 'relative',
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.lg,
-    backgroundColor: '#FAF5FF',
+    backgroundColor: colors.surface,
     paddingVertical: spacing.sm,
     overflow: 'hidden',
   },
-  selectionHighlight: {
-    position: 'absolute',
-    top: '50%',
-    left: spacing.md,
-    right: spacing.md,
-    marginTop: 6,
-    height: ITEM_HEIGHT,
-    backgroundColor: colors.primary,
-    opacity: 0.12,
-    borderRadius: radius.md,
-    zIndex: 0,
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  columnLabel: {
+    flex: 1,
+    fontSize: 12,
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+  separatorLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.primary,
+    textAlign: 'center',
+    width: 16,
   },
   columns: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
+    gap: spacing.md,
   },
   column: {
     flex: 1,
     alignItems: 'center',
   },
-  columnLabel: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginBottom: spacing.xs,
-  },
   scroll: {
-    height: ITEM_HEIGHT * 5,
+    height: ITEM_HEIGHT * VISIBLE_ROWS,
     width: '100%',
   },
   scrollContent: {
     paddingVertical: ITEM_HEIGHT * 2,
-  },
-  separator: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.primary,
-    marginHorizontal: spacing.sm,
-    marginTop: 18,
   },
   item: {
     height: ITEM_HEIGHT,

@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { PRIORITY_COLORS, PRIORITY_STARS } from '@/constants/priority';
 import { colors, radius, spacing } from '@/constants/theme';
+import { cardShadow } from '@/lib/styles/shadow';
 import type { Todo } from '@/types/todo';
 
 interface TodoCardProps {
@@ -17,7 +18,11 @@ export function TodoCard({ todo, onToggle, onEdit, onDelete, onPress }: TodoCard
   return (
     <Pressable
       onPress={() => onPress(todo)}
-      style={({ pressed }) => [styles.card, { borderLeftColor: borderColor }, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.card,
+        { borderLeftColor: borderColor },
+        pressed && styles.pressed,
+      ]}
     >
       <Pressable
         accessibilityRole="checkbox"
@@ -67,11 +72,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     marginBottom: spacing.sm,
     borderLeftWidth: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    ...cardShadow,
   },
   pressed: {
     opacity: 0.92,

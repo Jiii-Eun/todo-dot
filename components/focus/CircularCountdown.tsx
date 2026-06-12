@@ -7,6 +7,7 @@ interface CircularCountdownProps {
   progress: number;
   isOvertime: boolean;
   overtimeText?: string;
+  caption?: string;
 }
 
 const SIZE = 260;
@@ -19,6 +20,7 @@ export function CircularCountdown({
   progress,
   isOvertime,
   overtimeText,
+  caption,
 }: CircularCountdownProps) {
   const strokeDashoffset = CIRCUMFERENCE * (1 - progress);
   const ringColor = isOvertime ? colors.danger : colors.primary;
@@ -49,7 +51,7 @@ export function CircularCountdown({
         />
       </Svg>
       <View style={styles.center}>
-        <Text style={styles.caption}>{isOvertime ? '초과 시간' : '남은 시간'}</Text>
+        <Text style={styles.caption}>{caption ?? (isOvertime ? '초과 시간' : '남은 시간')}</Text>
         <Text style={[styles.timer, isOvertime && styles.overtime]}>{display}</Text>
         {overtimeText ? <Text style={styles.overtimeSub}>{overtimeText}</Text> : null}
       </View>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
 
@@ -22,8 +22,6 @@ import {
 
 } from 'react-native';
 
-import { Redirect } from 'expo-router';
-
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
@@ -44,15 +42,23 @@ type EntryMode = 'create' | 'login';
 
 export default function NicknameScreen() {
 
-  const { user, isLoading, createUser, loginUser } = useUserContext();
+  const { user, isLoading, createUser, loginUser, entryMode, setEntryMode } = useUserContext();
 
-  const [mode, setMode] = useState<EntryMode>('create');
+  const [mode, setMode] = useState<EntryMode>(entryMode);
 
   const [input, setInput] = useState('');
 
   const [error, setError] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
+
+
+
+  useEffect(() => {
+
+    setMode(entryMode);
+
+  }, [entryMode]);
 
 
 
@@ -74,10 +80,12 @@ export default function NicknameScreen() {
 
 
 
-  if (user) {
-
-    return <Redirect href="/(main)" />;
-
+  if (user && entryMode !== 'login') {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
   }
 
 
@@ -102,7 +110,11 @@ export default function NicknameScreen() {
 
       setError(result.message);
 
+      return;
+
     }
+
+    setEntryMode('create');
 
   };
 
