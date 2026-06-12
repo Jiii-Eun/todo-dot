@@ -7,12 +7,12 @@ alwaysApply: true
 
 ## 구현 전 확인
 - 요청이 MVP 범위를 벗어나면 (로그인, Pomodoro 버튼, 웹 지원 등) 먼저 확인.
-- DB 스키마 변경 시 types + Supabase migration + UI를 함께 제안.
+- DB 스키마 변경 시 types + Firestore rules/indexes + UI를 함께 제안.
 
 ## 코드 생성 원칙
 - **최소 diff**: 요청한 화면/기능만 수정. 무관한 리팩터링 금지.
 - 기존 패턴·네이밍·폴더 구조 따르기. 새 abstraction은 2곳 이상 재사용될 때만.
-- mock 데이터와 실제 Supabase 호출 혼재 금지 — 한 feature는 end-to-end로 완성.
+- mock 데이터와 실제 Firestore 호출 혼재 금지 — 한 feature는 end-to-end로 완성.
 - 주석은 비즈니스 규칙(반복 일정, 시간 검증)에만. 자명한 코드 설명 금지.
 
 ## 테스트·검증 제안

@@ -22,8 +22,9 @@ hooks/
   useCountdown.ts
   useUser.ts
 lib/
-  supabase/client.ts
-  supabase/todos.ts
+  firebase/client.ts
+  firebase/users.ts
+  firebase/todos.ts
   time/calculateRemaining.ts
   time/sortTodos.ts
 types/
