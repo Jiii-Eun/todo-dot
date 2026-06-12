@@ -1,6 +1,13 @@
+import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  useAnimatedProps,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import Svg, { Rect } from 'react-native-svg';
 import { ACTIVITY_AXIS_LABELS, type ActivityBucket } from '@/lib/time/activityDistribution';
+import { motion } from '@/constants/motion';
 import { colors, spacing } from '@/constants/theme';
 
 interface ActivityBarChartProps {
@@ -9,6 +16,41 @@ interface ActivityBarChartProps {
 
 const CHART_HEIGHT = 80;
 const CHART_WIDTH = 280;
+
+const AnimatedRect = Animated.createAnimatedComponent(Rect);
+
+interface AnimatedBarProps {
+  x: number;
+  barWidth: number;
+  targetHeight: number;
+  fill: string;
+}
+
+function AnimatedBar({ x, barWidth, targetHeight, fill }: AnimatedBarProps) {
+  const height = useSharedValue(0);
+
+  useEffect(() => {
+    height.value = withTiming(targetHeight, {
+      duration: motion.normal,
+      easing: motion.easing,
+    });
+  }, [height, targetHeight]);
+
+  const animatedProps = useAnimatedProps(() => ({
+    height: height.value,
+    y: CHART_HEIGHT - height.value,
+  }));
+
+  return (
+    <AnimatedRect
+      x={x}
+      width={barWidth}
+      rx={2}
+      fill={fill}
+      animatedProps={animatedProps}
+    />
+  );
+}
 
 export function ActivityBarChart({ buckets }: ActivityBarChartProps) {
   const maxValue = Math.max(1, ...buckets.map((b) => b.value));
@@ -21,15 +63,13 @@ export function ActivityBarChart({ buckets }: ActivityBarChartProps) {
         {buckets.map((bucket, index) => {
           const barHeight = (bucket.value / maxValue) * (CHART_HEIGHT - 10);
           const x = index * (barWidth + 1);
-          const y = CHART_HEIGHT - barHeight;
+
           return (
-            <Rect
+            <AnimatedBar
               key={bucket.hour}
               x={x}
-              y={y}
-              width={barWidth}
-              height={barHeight}
-              rx={2}
+              barWidth={barWidth}
+              targetHeight={barHeight}
               fill={bucket.value > 0 ? colors.primaryLight : colors.border}
             />
           );

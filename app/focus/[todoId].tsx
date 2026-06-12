@@ -50,10 +50,12 @@ export default function FocusScreen() {
     );
   }
 
-  const caption = countdown.isWaiting
-    ? '시작 전'
-    : countdown.isOvertime
-      ? '초과 시간'
+  const caption = countdown.isDayEnded
+    ? countdown.isPastSession
+      ? '일정 종료'
+      : '오늘 일정 종료'
+    : countdown.isWaiting
+      ? '시작 전'
       : '남은 시간';
 
   return (
@@ -71,17 +73,19 @@ export default function FocusScreen() {
         </View>
       </View>
 
-      <Text style={styles.schedule}>
-        {todo.startTime} ~ {todo.endTime}
-      </Text>
-      <Text style={styles.dailyHint}>오늘 하루 기준 · 자정 이후 새로 시작</Text>
+      {todo.description ? (
+        <Text style={styles.description} numberOfLines={2}>
+          {todo.description}
+        </Text>
+      ) : null}
+      <Text style={styles.dailyHint}>자정 이후 새로 시작</Text>
 
       <View style={styles.center}>
         <CircularCountdown
           display={countdown.display}
           progress={countdown.progress}
-          isOvertime={countdown.isOvertime}
-          overtimeText={countdown.overtimeText}
+          isOvertime={false}
+          isDayEnded={countdown.isDayEnded}
           caption={caption}
         />
       </View>
@@ -136,11 +140,12 @@ const styles = StyleSheet.create({
   star: {
     fontSize: 16,
   },
-  schedule: {
+  description: {
     marginTop: spacing.sm,
     fontSize: 15,
     color: colors.textSecondary,
     textAlign: 'center',
+    lineHeight: 22,
   },
   dailyHint: {
     marginTop: 4,

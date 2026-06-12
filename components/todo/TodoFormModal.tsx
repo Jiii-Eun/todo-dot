@@ -279,6 +279,8 @@ export function TodoFormModal({
 
             placeholder="헬스장 가기"
 
+            placeholderTextColor={colors.textMuted}
+
             style={styles.input}
 
           />
@@ -294,6 +296,8 @@ export function TodoFormModal({
             onChangeText={(description) => setForm((prev) => ({ ...prev, description }))}
 
             placeholder="하체 운동, 러닝 30분"
+
+            placeholderTextColor={colors.textMuted}
 
             style={[styles.input, styles.multiline]}
 
@@ -431,13 +435,13 @@ export function TodoFormModal({
 
 
 
-              <Text style={styles.label}>종료일</Text>
+              <Text style={styles.label}>종료일 (선택)</Text>
 
               <Pressable style={styles.timeButton} onPress={() => setPickerTarget('repeatEnd')}>
 
                 <Text style={[styles.timeValue, !form.repeatDate && styles.placeholder]}>
 
-                  {form.repeatDate ? toDateString(form.repeatDate) : '종료일 선택'}
+                  {form.repeatDate ? toDateString(form.repeatDate) : '설정 안 함 (계속 반복)'}
 
                 </Text>
 
@@ -445,7 +449,7 @@ export function TodoFormModal({
 
               <Text style={styles.repeatHint}>
 
-                선택한 요일마다 반복되며, 종료일 이후에는 일정이 생성되지 않습니다.
+                선택한 요일마다 반복됩니다. 종료일을 설정하면 해당 날짜까지만 일정이 생성됩니다.
 
               </Text>
 
@@ -463,11 +467,13 @@ export function TodoFormModal({
 
         <View style={styles.footer}>
 
-          <Button label="취소" variant="secondary" onPress={onClose} style={styles.footerButton} />
+          <Button label="취소" variant="secondary" compact onPress={onClose} style={styles.footerButton} />
 
           <Button
 
             label="저장"
+
+            compact
 
             onPress={() => void handleSave()}
 
@@ -527,11 +533,15 @@ export function TodoFormModal({
 
         visible={pickerTarget === 'repeatEnd'}
 
-        value={form.repeatDate ?? selectedDate}
+        value={form.repeatDate}
 
-        title="종료일"
+        fallbackDate={selectedDate}
+
+        title="종료일 (선택)"
 
         minDate={selectedDate}
+
+        optional
 
         onClose={() => setPickerTarget(null)}
 
@@ -607,7 +617,7 @@ const styles = StyleSheet.create({
 
     fontSize: 16,
 
-    color: colors.text,
+    color: colors.textSecondary,
 
   },
 
@@ -823,7 +833,9 @@ const styles = StyleSheet.create({
 
     gap: spacing.sm,
 
-    padding: spacing.lg,
+    paddingHorizontal: spacing.md,
+
+    paddingVertical: spacing.md,
 
     borderTopWidth: 1,
 

@@ -1,5 +1,5 @@
 import { useLayoutEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { AnimatedModal } from '@/components/ui/AnimatedModal';
 import { Button } from '@/components/ui/Button';
 import { ThemedTimePicker } from '@/components/ui/ThemedTimePicker';
@@ -23,8 +23,6 @@ export function TimePickerSheet({
   onClose,
   onConfirm,
 }: TimePickerSheetProps) {
-  const { width } = useWindowDimensions();
-  const sheetWidth = Math.min(width - spacing.lg * 2, 480);
   const [draft, setDraft] = useState(value);
   const [error, setError] = useState('');
 
@@ -46,37 +44,39 @@ export function TimePickerSheet({
 
   return (
     <AnimatedModal visible={visible} onRequestClose={onClose} variant="sheet">
-      <Pressable
-        style={[styles.sheet, { width: sheetWidth, alignSelf: 'center' }]}
-        onPress={(event) => event.stopPropagation()}
-      >
-        <View style={styles.handle} />
-        <Text style={styles.title}>{title}</Text>
+      <View style={styles.sheet}>
+        <Pressable style={styles.body} onPress={(event) => event.stopPropagation()}>
+          <View style={styles.handle} />
+          <Text style={styles.title}>{title}</Text>
 
-        {visible ? (
-          <ThemedTimePicker active value={draft} minTime={minTime} onChange={setDraft} />
-        ) : null}
+          {visible ? (
+            <ThemedTimePicker active value={draft} minTime={minTime} onChange={setDraft} />
+          ) : null}
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+        </Pressable>
 
-        <View style={styles.actions}>
-          <Button label="취소" variant="secondary" onPress={onClose} style={styles.action} />
-          <Button label="확인" onPress={handleConfirm} style={styles.action} />
+        <View style={styles.footer}>
+          <Button label="취소" variant="secondary" compact onPress={onClose} style={styles.footerButton} />
+          <Button label="확인" compact onPress={handleConfirm} style={styles.footerButton} />
         </View>
-      </Pressable>
+      </View>
     </AnimatedModal>
   );
 }
 
 const styles = StyleSheet.create({
   sheet: {
+    width: '100%',
     backgroundColor: colors.surface,
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
+    overflow: 'hidden',
+  },
+  body: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
-    paddingBottom: spacing.xl,
-    marginBottom: spacing.lg,
+    paddingBottom: spacing.md,
   },
   handle: {
     alignSelf: 'center',
@@ -98,12 +98,18 @@ const styles = StyleSheet.create({
     color: colors.danger,
     textAlign: 'center',
   },
-  actions: {
+  footer: {
+    flexShrink: 0,
     flexDirection: 'row',
     gap: spacing.sm,
-    marginTop: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.surface,
   },
-  action: {
+  footerButton: {
     flex: 1,
   },
 });

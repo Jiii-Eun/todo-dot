@@ -33,9 +33,10 @@ export function ConfirmModal({
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.description}>{description}</Text>
         <View style={styles.actions}>
-          <Button label={cancelText} onPress={onCancel} variant="secondary" style={styles.action} />
+          <Button label={cancelText} compact onPress={onCancel} variant="secondary" style={styles.action} />
           <Button
             label={confirmText}
+            compact
             onPress={onConfirm}
             variant={destructive ? 'danger' : 'primary'}
             disabled={confirmDisabled}

@@ -15,14 +15,32 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.tododot.app"
+      "bundleIdentifier": "com.tododot.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
         "backgroundColor": "#8B5CF6"
       },
       "package": "com.tododot.app"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/favicon.png",
+      "name": ".Todo Dot",
+      "shortName": "Todo Dot",
+      "description": "할 일을 관리하는 것이 아니라, 남은 시간을 관리한다.",
+      "themeColor": "#8B5CF6",
+      "backgroundColor": "#8B5CF6",
+      "display": "standalone",
+      "startUrl": "/",
+      "lang": "ko"
     },
     "plugins": [
       [
@@ -35,6 +53,15 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "sitemap": false
+      },
+      "eas": {
+        "projectId": "5eadaa2f-5885-4750-9bc6-0b2b1566728c"
+      }
+    },
+    "owner": "jiiiieun"
   }
 }

@@ -6,41 +6,37 @@ import {
   endOfWeek,
   isSameDay,
   isSameMonth,
+  isToday,
   startOfDay,
   startOfMonth,
   startOfWeek,
   subMonths,
 } from 'date-fns';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing } from '@/constants/theme';
 import { formatMonthYear } from '@/lib/time/formatTime';
 
-const WEEKDAYS = ['월', '화', '수', '목', '금', '토', '일'];
+const WEEKDAYS = ['월', '화', '수', '목', '금', '토', '일'] as const;
+const WEEKEND_INDEXES = new Set([5, 6]);
+const CELL_SIZE = 40;
+const GRID_WIDTH = CELL_SIZE * 7;
 
 interface CalendarGridProps {
   selectedDate: Date;
   onSelectDate: (date: Date) => void;
   minSelectableDate?: Date;
-  maxHeightRatio?: number;
 }
 
 export function CalendarGrid({
   selectedDate,
   onSelectDate,
   minSelectableDate,
-  maxHeightRatio = 0.42,
 }: CalendarGridProps) {
-  const { width, height } = useWindowDimensions();
   const [viewDate, setViewDate] = useState(selectedDate);
 
   useEffect(() => {
     setViewDate(selectedDate);
   }, [selectedDate]);
-
-  const horizontalPadding = spacing.lg * 2;
-  const gridWidth = Math.min(width - horizontalPadding, 420);
-  const maxGridHeight = height * maxHeightRatio;
-  const cellSize = Math.min(gridWidth / 7, maxGridHeight / 8, 48);
 
   const monthStart = startOfMonth(viewDate);
   const monthEnd = endOfMonth(viewDate);
@@ -54,30 +50,46 @@ export function CalendarGrid({
   };
 
   return (
-    <View style={[styles.wrapper, { width: cellSize * 7 }]}>
+    <View style={styles.wrapper}>
       <View style={styles.header}>
-        <Pressable onPress={() => setViewDate(subMonths(viewDate, 1))} hitSlop={8}>
+        <Pressable
+          accessibilityLabel="이전 달"
+          onPress={() => setViewDate(subMonths(viewDate, 1))}
+          style={({ pressed }) => [styles.navButton, pressed && styles.navButtonPressed]}
+        >
           <Text style={styles.nav}>{'<'}</Text>
         </Pressable>
         <Text style={styles.month}>{formatMonthYear(viewDate)}</Text>
-        <Pressable onPress={() => setViewDate(addMonths(viewDate, 1))} hitSlop={8}>
+        <Pressable
+          accessibilityLabel="다음 달"
+          onPress={() => setViewDate(addMonths(viewDate, 1))}
+          style={({ pressed }) => [styles.navButton, pressed && styles.navButtonPressed]}
+        >
           <Text style={styles.nav}>{'>'}</Text>
         </Pressable>
       </View>
 
       <View style={styles.weekdays}>
-        {WEEKDAYS.map((day) => (
-          <Text key={day} style={[styles.weekday, { width: cellSize }]}>
+        {WEEKDAYS.map((day, index) => (
+          <Text
+            key={day}
+            style={[
+              styles.weekday,
+              { width: CELL_SIZE },
+              WEEKEND_INDEXES.has(index) && styles.weekdayWeekend,
+            ]}
+          >
             {day}
           </Text>
         ))}
       </View>
 
-      <View style={[styles.grid, { width: cellSize * 7 }]}>
+      <View style={styles.grid}>
         {days.map((day) => {
           const selected = isSameDay(day, selectedDate);
           const inMonth = isSameMonth(day, viewDate);
           const disabled = isDisabled(day);
+          const today = isToday(day);
 
           return (
             <Pressable
@@ -87,9 +99,10 @@ export function CalendarGrid({
               style={[
                 styles.dayCell,
                 {
-                  width: cellSize,
-                  height: cellSize,
+                  width: CELL_SIZE,
+                  height: CELL_SIZE,
                 },
+                today && !selected && styles.dayToday,
                 selected && styles.daySelected,
                 disabled && styles.dayDisabled,
               ]}
@@ -115,50 +128,85 @@ export function CalendarGrid({
 const styles = StyleSheet.create({
   wrapper: {
     alignSelf: 'center',
+    width: GRID_WIDTH + spacing.md * 2,
+    backgroundColor: colors.background,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.md,
+    paddingHorizontal: spacing.xs,
+  },
+  navButton: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+  },
+  navButtonPressed: {
+    backgroundColor: colors.primaryLight,
+    opacity: 0.85,
   },
   nav: {
-    fontSize: 20,
+    fontSize: 18,
+    fontWeight: '700',
     color: colors.primary,
-    paddingHorizontal: spacing.sm,
   },
   month: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700',
     color: colors.text,
   },
   weekdays: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: spacing.xs,
+    width: GRID_WIDTH,
+    alignSelf: 'center',
+    marginBottom: spacing.sm,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   weekday: {
     textAlign: 'center',
     fontSize: 12,
-    color: colors.textMuted,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  weekdayWeekend: {
+    color: colors.primary,
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    width: GRID_WIDTH,
+    alignSelf: 'center',
   },
   dayCell: {
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: radius.full,
+  },
+  dayToday: {
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.primaryLight,
   },
   daySelected: {
     backgroundColor: colors.primary,
-    borderRadius: radius.full,
   },
   dayDisabled: {
     opacity: 0.35,
   },
   dayText: {
     fontSize: 14,
+    fontWeight: '500',
     color: colors.text,
   },
   dayMuted: {

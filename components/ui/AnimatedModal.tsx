@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   Modal,
   Pressable,
@@ -6,6 +6,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
   useAnimatedStyle,
@@ -16,6 +17,11 @@ import { motion } from '@/constants/motion';
 import { colors } from '@/constants/theme';
 
 export type AnimatedModalVariant = 'fade' | 'sheet' | 'slide';
+export const SHEET_HEIGHT_RATIO = 0.92;
+const SHEET_OFFSET = 420;
+const SLIDE_OFFSET = 640;
+const SHEET_DISMISS_DRAG = 100;
+const SHEET_DISMISS_VELOCITY = 500;
 
 interface AnimatedModalProps {
   visible: boolean;
@@ -25,10 +31,8 @@ interface AnimatedModalProps {
   overlayStyle?: StyleProp<ViewStyle>;
   contentStyle?: StyleProp<ViewStyle>;
   dismissOnOverlayPress?: boolean;
+  enableDragToDismiss?: boolean;
 }
-
-const SHEET_OFFSET = 420;
-const SLIDE_OFFSET = 640;
 
 export function AnimatedModal({
   visible,
@@ -38,13 +42,16 @@ export function AnimatedModal({
   overlayStyle,
   contentStyle,
   dismissOnOverlayPress = true,
+  enableDragToDismiss = true,
 }: AnimatedModalProps) {
   const [mounted, setMounted] = useState(visible);
   const progress = useSharedValue(visible ? 1 : 0);
+  const dragY = useSharedValue(0);
 
   useEffect(() => {
     if (visible) {
       setMounted(true);
+      dragY.value = 0;
     }
 
     progress.value = withTiming(
@@ -59,10 +66,10 @@ export function AnimatedModal({
         }
       },
     );
-  }, [progress, visible]);
+  }, [dragY, progress, visible]);
 
   const overlayAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: progress.value,
+    opacity: progress.value * (1 - Math.min(dragY.value / 400, 0.4)),
   }));
 
   const fadeContentStyle = useAnimatedStyle(() => ({
@@ -71,12 +78,36 @@ export function AnimatedModal({
   }));
 
   const sheetContentStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: (1 - progress.value) * SHEET_OFFSET }],
+    transform: [{ translateY: (1 - progress.value) * SHEET_OFFSET + dragY.value }],
   }));
 
   const slideContentStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: (1 - progress.value) * SLIDE_OFFSET }],
+    transform: [{ translateY: (1 - progress.value) * SLIDE_OFFSET + dragY.value }],
   }));
+
+  const panGesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetY(12)
+        .onUpdate((event) => {
+          if (event.translationY > 0) {
+            dragY.value = event.translationY;
+          }
+        })
+        .onEnd((event) => {
+          if (event.translationY > SHEET_DISMISS_DRAG || event.velocityY > SHEET_DISMISS_VELOCITY) {
+            dragY.value = withTiming(SHEET_OFFSET, { duration: motion.fast }, (finished) => {
+              if (finished) {
+                runOnJS(onRequestClose)();
+              }
+            });
+            return;
+          }
+
+          dragY.value = withTiming(0, { duration: motion.fast, easing: motion.easing });
+        }),
+    [dragY, onRequestClose],
+  );
 
   if (!mounted) {
     return null;
@@ -102,6 +133,13 @@ export function AnimatedModal({
   };
 
   const overlayToneStyle = variant === 'slide' ? styles.opaqueOverlay : null;
+  const canDrag = enableDragToDismiss && (variant === 'sheet' || variant === 'slide');
+
+  const content = (
+    <Animated.View style={[contentLayoutStyle, contentAnimatedStyle, contentStyle]}>
+      {children}
+    </Animated.View>
+  );
 
   return (
     <Modal transparent visible animationType="none" onRequestClose={onRequestClose}>
@@ -109,9 +147,7 @@ export function AnimatedModal({
         style={[styles.overlay, overlayToneStyle, overlayLayoutStyle, overlayAnimatedStyle, overlayStyle]}
       >
         <Pressable style={styles.overlayPress} onPress={handleOverlayPress} />
-        <Animated.View style={[contentLayoutStyle, contentAnimatedStyle, contentStyle]}>
-          {children}
-        </Animated.View>
+        {canDrag ? <GestureDetector gesture={panGesture}>{content}</GestureDetector> : content}
       </Animated.View>
     </Modal>
   );

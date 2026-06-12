@@ -1,87 +1,125 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
 import {
-
   ActivityIndicator,
-
   KeyboardAvoidingView,
-
+  LayoutChangeEvent,
   Platform,
-
   Pressable,
-
   ScrollView,
-
   StyleSheet,
-
   Text,
-
   TextInput,
-
   View,
+} from "react-native";
 
-} from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenEntrance } from "@/components/ui/ScreenEntrance";
+import { Button } from "@/components/ui/Button";
 
-import { ScreenEntrance } from '@/components/ui/ScreenEntrance';
-import { Button } from '@/components/ui/Button';
+import { Logo } from "@/components/ui/Logo";
 
-import { Logo } from '@/components/ui/Logo';
+import { motion } from "@/constants/motion";
+import { colors, radius, spacing } from "@/constants/theme";
 
-import { colors, radius, spacing } from '@/constants/theme';
+import { useUserContext } from "@/contexts/UserProvider";
 
-import { useUserContext } from '@/contexts/UserProvider';
+import { isFirebaseConfigured } from "@/lib/firebase/client";
 
-import { isFirebaseConfigured } from '@/lib/firebase/client';
+type EntryMode = "create" | "login";
 
+const MODE_TAB_PADDING = 4;
+const WELCOME_INPUT_ROW_HEIGHT = 48;
 
+interface ModeTabsProps {
+  mode: EntryMode;
+  onModeChange: (mode: EntryMode) => void;
+}
 
-type EntryMode = 'create' | 'login';
+function ModeTabs({ mode, onModeChange }: ModeTabsProps) {
+  const [tabWidth, setTabWidth] = useState(0);
+  const activeIndex = useSharedValue(mode === "create" ? 0 : 1);
 
+  useEffect(() => {
+    activeIndex.value = withTiming(mode === "create" ? 0 : 1, {
+      duration: motion.normal,
+      easing: motion.easing,
+    });
+  }, [activeIndex, mode]);
 
+  const indicatorStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: activeIndex.value * tabWidth }],
+  }));
+
+  const handleLayout = (event: LayoutChangeEvent) => {
+    const innerWidth = event.nativeEvent.layout.width - MODE_TAB_PADDING * 2;
+    setTabWidth(innerWidth / 2);
+  };
+
+  return (
+    <View style={styles.modeTabs} onLayout={handleLayout}>
+      {tabWidth > 0 ? (
+        <Animated.View
+          style={[styles.modeTabIndicator, { width: tabWidth }, indicatorStyle]}
+        />
+      ) : null}
+      <Pressable style={styles.modeTab} onPress={() => onModeChange("create")}>
+        <Text
+          style={[
+            styles.modeTabText,
+            mode === "create" && styles.modeTabTextActive,
+          ]}
+        >
+          새 계정
+        </Text>
+      </Pressable>
+      <Pressable style={styles.modeTab} onPress={() => onModeChange("login")}>
+        <Text
+          style={[
+            styles.modeTabText,
+            mode === "login" && styles.modeTabTextActive,
+          ]}
+        >
+          기존 계정 접속
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
 
 export default function NicknameScreen() {
-
-  const { user, isLoading, createUser, loginUser, entryMode, setEntryMode } = useUserContext();
+  const { user, isLoading, createUser, loginUser, entryMode, setEntryMode } =
+    useUserContext();
 
   const [mode, setMode] = useState<EntryMode>(entryMode);
 
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
 
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
 
-
-
   useEffect(() => {
-
     setMode(entryMode);
-
   }, [entryMode]);
 
-
-
   if (isLoading) {
-
     return (
-
       <View style={styles.loading}>
-
         <ActivityIndicator size="large" color={colors.primary} />
 
         <Text style={styles.loadingText}>불러오는 중...</Text>
-
       </View>
-
     );
-
   }
 
-
-
-  if (user && entryMode !== 'login') {
+  if (user && entryMode !== "login") {
     return (
       <View style={styles.loading}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -89,325 +127,245 @@ export default function NicknameScreen() {
     );
   }
 
-
-
   const handleSubmit = async () => {
-
     setSubmitting(true);
 
-    setError('');
-
-
+    setError("");
 
     const result =
-
-      mode === 'create' ? await createUser(input) : await loginUser(input);
-
-
+      mode === "create" ? await createUser(input) : await loginUser(input);
 
     setSubmitting(false);
 
     if (!result.success) {
-
       setError(result.message);
 
       return;
-
     }
 
-    setEntryMode('create');
-
+    setEntryMode("create");
   };
-
-
 
   const switchMode = (nextMode: EntryMode) => {
-
     setMode(nextMode);
 
-    setInput('');
+    setInput("");
 
-    setError('');
-
+    setError("");
   };
 
-
-
   const placeholder =
+    mode === "create" ? "사용할 닉네임을 입력해 주세요." : "닉네임#1234";
 
-    mode === 'create' ? '사용할 닉네임을 입력해 주세요.' : '민수#4821';
-
-
-
-  const maxLength = mode === 'create' ? 12 : 20;
-
-
+  const maxLength = mode === "create" ? 12 : 20;
 
   return (
-
     <SafeAreaView style={styles.safe}>
       <ScreenEntrance style={styles.flex}>
-      <KeyboardAvoidingView
-
-        style={styles.flex}
-
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-
-      >
-
-        <ScrollView
-          contentContainerStyle={styles.container}
-          showsVerticalScrollIndicator={false}
-          showsHorizontalScrollIndicator={false}
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
+          <ScrollView
+            contentContainerStyle={styles.container}
+            showsVerticalScrollIndicator={false}
+            showsHorizontalScrollIndicator={false}
+          >
+            <Logo size="lg" />
 
-          <Logo size="lg" />
+            <Text style={styles.welcome}>환영합니다!</Text>
 
-          <Text style={styles.welcome}>환영합니다!</Text>
+            <ModeTabs mode={mode} onModeChange={switchMode} />
 
+            <View style={styles.inputRow}>
+              <TextInput
+                value={input}
+                onChangeText={setInput}
+                placeholder={placeholder}
+                placeholderTextColor={colors.textMuted}
+                style={styles.input}
+                maxLength={maxLength}
+                autoCapitalize="none"
+                returnKeyType="done"
+                onSubmitEditing={() => {
+                  if (submitting || isLoading) return;
+                  void handleSubmit();
+                }}
+              />
 
+              <Button
+                label={mode === "create" ? "시작하기" : "접속하기"}
+                compact
+                onPress={() => void handleSubmit()}
+                disabled={submitting || isLoading}
+                style={styles.submitButton}
+              />
+            </View>
 
-          <View style={styles.modeTabs}>
+            {error ? <Text style={styles.error}>{error}</Text> : null}
 
-            <Pressable
+            <View style={styles.infoBox}>
+              {mode === "create" ? (
+                <>
+                  <Text style={styles.infoTitle}>닉네임 안내</Text>
 
-              style={[styles.modeTab, mode === 'create' && styles.modeTabActive]}
-
-              onPress={() => switchMode('create')}
-
-            >
-
-              <Text style={[styles.modeTabText, mode === 'create' && styles.modeTabTextActive]}>
-
-                새 계정
-
-              </Text>
-
-            </Pressable>
-
-            <Pressable
-
-              style={[styles.modeTab, mode === 'login' && styles.modeTabActive]}
-
-              onPress={() => switchMode('login')}
-
-            >
-
-              <Text style={[styles.modeTabText, mode === 'login' && styles.modeTabTextActive]}>
-
-                기존 계정 접속
-
-              </Text>
-
-            </Pressable>
-
-          </View>
-
-
-
-          <TextInput
-
-            value={input}
-
-            onChangeText={setInput}
-
-            placeholder={placeholder}
-
-            style={styles.input}
-
-            maxLength={maxLength}
-
-            autoCapitalize="none"
-
-          />
-
-
-
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-
-
-
-          <Button
-
-            label={mode === 'create' ? '시작하기' : '접속하기'}
-
-            onPress={() => void handleSubmit()}
-
-            disabled={submitting || isLoading}
-
-            style={styles.button}
-
-          />
-
-
-
-          <View style={styles.infoBox}>
-
-            {mode === 'create' ? (
-
-              <>
-
-                <Text style={styles.infoTitle}>닉네임 안내</Text>
-
-                <Text style={styles.infoText}>• 2~12자, 한글/영문/숫자 사용 가능</Text>
-
-                <Text style={styles.infoText}>• 닉네임#1234 형태로 자동 생성됩니다</Text>
-
-                <Text style={styles.infoText}>• 같은 닉네임도 tag가 달라 구분됩니다</Text>
-
-                <Text style={styles.infoExample}>예: 민수 → 민수#4821</Text>
-
-              </>
-
-            ) : (
-
-              <>
-
-                <Text style={styles.infoTitle}>기존 계정 접속</Text>
-
-                <Text style={styles.infoText}>• 메인 화면에 표시된 닉네임#1234를 입력하세요</Text>
-
-                <Text style={styles.infoText}>• 다른 기기·브라우저에서도 동일하게 접속할 수 있습니다</Text>
-
-                {!isFirebaseConfigured ? (
-
-                  <Text style={styles.infoWarning}>
-
-                    Firebase 미연동 상태에서는 기기 간 접속이 불가합니다.
-
+                  <Text style={styles.infoText}>
+                    • 2~12자, 한글/영문/숫자 사용 가능
                   </Text>
 
-                ) : null}
+                  <Text style={styles.infoText}>
+                    • 닉네임#1234 형태로 자동 생성됩니다
+                  </Text>
 
-              </>
+                  <Text style={styles.infoText}>
+                    • 같은 닉네임도 tag가 달라 구분됩니다
+                  </Text>
 
-            )}
+                  <Text style={styles.infoExample}>예: 민수 → 민수#4821</Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.infoTitle}>기존 계정 접속</Text>
 
-          </View>
+                  <Text style={styles.infoText}>
+                    • 메인 화면에 표시된 닉네임#1234를 입력하세요
+                  </Text>
 
-        </ScrollView>
+                  <Text style={styles.infoText}>
+                    • 다른 기기·브라우저에서도 동일하게 접속할 수 있습니다
+                  </Text>
 
-      </KeyboardAvoidingView>
+                  {!isFirebaseConfigured ? (
+                    <Text style={styles.infoWarning}>
+                      Firebase 미연동 상태에서는 기기 간 접속이 불가합니다.
+                    </Text>
+                  ) : null}
+                </>
+              )}
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </ScreenEntrance>
     </SafeAreaView>
-
   );
-
 }
 
-
-
 const styles = StyleSheet.create({
-
   loading: {
-
     flex: 1,
 
     backgroundColor: colors.background,
 
-    alignItems: 'center',
+    alignItems: "center",
 
-    justifyContent: 'center',
+    justifyContent: "center",
 
     gap: 12,
-
   },
 
   loadingText: {
-
     fontSize: 14,
 
     color: colors.textSecondary,
-
   },
 
   safe: {
-
     flex: 1,
 
     backgroundColor: colors.background,
-
   },
 
   flex: {
-
     flex: 1,
-
   },
 
   container: {
-
     flexGrow: 1,
+
+    width: "100%",
 
     padding: spacing.lg,
 
-    justifyContent: 'center',
+    paddingTop: spacing.xl,
 
+    justifyContent: "flex-start",
   },
 
   welcome: {
-
     marginTop: spacing.xl,
 
     fontSize: 28,
 
-    fontWeight: '700',
+    fontWeight: "700",
 
     color: colors.text,
 
     marginBottom: spacing.lg,
-
   },
 
   modeTabs: {
+    flexDirection: "row",
 
-    flexDirection: 'row',
+    position: "relative",
 
     backgroundColor: colors.border,
 
     borderRadius: radius.md,
 
-    padding: 4,
+    padding: MODE_TAB_PADDING,
 
     marginBottom: spacing.md,
 
+    overflow: "hidden",
+  },
+
+  modeTabIndicator: {
+    position: "absolute",
+
+    top: MODE_TAB_PADDING,
+
+    left: MODE_TAB_PADDING,
+
+    bottom: MODE_TAB_PADDING,
+
+    backgroundColor: colors.surface,
+
+    borderRadius: radius.sm,
   },
 
   modeTab: {
-
     flex: 1,
 
     paddingVertical: 10,
 
     borderRadius: radius.sm,
 
-    alignItems: 'center',
+    alignItems: "center",
 
-  },
-
-  modeTabActive: {
-
-    backgroundColor: colors.surface,
-
+    zIndex: 1,
   },
 
   modeTabText: {
-
     fontSize: 14,
 
-    fontWeight: '600',
+    fontWeight: "600",
 
     color: colors.textSecondary,
-
   },
 
   modeTabTextActive: {
-
     color: colors.primary,
+  },
 
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    gap: spacing.sm,
   },
 
   input: {
+    flex: 1,
+    height: WELCOME_INPUT_ROW_HEIGHT,
 
     backgroundColor: colors.surface,
 
@@ -419,90 +377,77 @@ const styles = StyleSheet.create({
 
     paddingHorizontal: spacing.md,
 
-    paddingVertical: 16,
+    paddingVertical: 0,
 
     fontSize: 16,
 
-    color: colors.text,
+    color: colors.textSecondary,
+  },
 
+  submitButton: {
+    flexShrink: 0,
+    height: WELCOME_INPUT_ROW_HEIGHT,
+    borderRadius: radius.md,
+    paddingVertical: 0,
+    paddingHorizontal: spacing.md,
+    justifyContent: "center",
   },
 
   error: {
-
     marginTop: spacing.sm,
 
     color: colors.danger,
-
-  },
-
-  button: {
-
-    marginTop: spacing.lg,
-
   },
 
   infoBox: {
-
     marginTop: spacing.lg,
 
-    backgroundColor: '#F1F5F9',
+    backgroundColor: "#F1F5F9",
 
     borderRadius: radius.md,
 
     padding: spacing.md,
 
     gap: 6,
-
   },
 
   infoTitle: {
-
     fontSize: 14,
 
-    fontWeight: '700',
+    fontWeight: "700",
 
     color: colors.text,
 
     marginBottom: 4,
-
   },
 
   infoText: {
-
     fontSize: 13,
 
     color: colors.textSecondary,
 
     lineHeight: 20,
-
   },
 
   infoExample: {
-
     marginTop: 4,
 
     fontSize: 13,
 
-    fontWeight: '600',
+    fontWeight: "600",
 
     color: colors.primary,
-
   },
 
   infoWarning: {
-
     marginTop: 4,
 
     fontSize: 13,
 
-    fontWeight: '600',
+    fontWeight: "600",
 
     color: colors.danger,
 
     lineHeight: 20,
-
   },
-
 });
-
-

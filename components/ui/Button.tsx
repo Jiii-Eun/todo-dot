@@ -6,6 +6,7 @@ interface ButtonProps {
   onPress: () => void;
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
   disabled?: boolean;
+  compact?: boolean;
   style?: ViewStyle;
 }
 
@@ -14,6 +15,7 @@ export function Button({
   onPress,
   variant = 'primary',
   disabled = false,
+  compact = false,
   style,
 }: ButtonProps) {
   return (
@@ -23,13 +25,22 @@ export function Button({
       onPress={onPress}
       style={({ pressed }) => [
         styles.base,
+        compact && styles.compact,
         styles[variant],
         disabled && styles.disabled,
         pressed && styles.pressed,
         style,
       ]}
     >
-      <Text style={[styles.label, styles[`${variant}Label` as keyof typeof styles]]}>{label}</Text>
+      <Text
+        style={[
+          styles.label,
+          compact && styles.compactLabel,
+          styles[`${variant}Label` as keyof typeof styles],
+        ]}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -41,6 +52,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  compact: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
   },
   primary: {
     backgroundColor: colors.primary,
@@ -63,6 +78,9 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  compactLabel: {
+    fontSize: 14,
   },
   primaryLabel: {
     color: '#FFFFFF',

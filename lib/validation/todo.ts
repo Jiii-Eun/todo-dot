@@ -32,11 +32,8 @@ export function validateRepeatEndDate(
   repeatDate: Date | null,
   anchorDate?: Date,
 ): TodoValidation {
-  if (!repeatEnabled) {
+  if (!repeatEnabled || !repeatDate) {
     return { valid: true, message: '' };
-  }
-  if (!repeatDate) {
-    return { valid: false, message: '종료일을 선택해 주세요.' };
   }
   if (anchorDate && startOfDay(repeatDate) < startOfDay(anchorDate)) {
     return { valid: false, message: '종료일은 선택한 날짜 이후여야 합니다.' };
