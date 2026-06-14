@@ -30,7 +30,7 @@ import { colors, radius, spacing } from "@/constants/theme";
 
 import { useUserContext } from "@/contexts/UserProvider";
 
-import { isFirebaseConfigured } from "@/lib/firebase/client";
+import { isApiConfigured } from "@/lib/api/client";
 
 type EntryMode = "create" | "login";
 
@@ -235,9 +235,9 @@ export default function NicknameScreen() {
                     • 다른 기기·브라우저에서도 동일하게 접속할 수 있습니다
                   </Text>
 
-                  {!isFirebaseConfigured ? (
+                  {!isApiConfigured ? (
                     <Text style={styles.infoWarning}>
-                      Firebase 미연동 상태에서는 기기 간 접속이 불가합니다.
+                      서버 미연동 상태에서는 기기 간 접속이 불가합니다.
                     </Text>
                   ) : null}
                 </>

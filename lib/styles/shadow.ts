@@ -10,3 +10,14 @@ export const cardShadow: ViewStyle = {
     },
   ],
 };
+
+export const toastShadow: ViewStyle = {
+  boxShadow: [
+    {
+      offsetX: 0,
+      offsetY: 4,
+      blurRadius: 8,
+      color: 'rgba(0, 0, 0, 0.12)',
+    },
+  ],
+};

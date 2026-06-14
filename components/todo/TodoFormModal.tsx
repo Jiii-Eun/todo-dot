@@ -43,11 +43,11 @@ import {
 
 import { colors, radius, spacing } from '@/constants/theme';
 
-import { addMinutesToTime, isTimeAfter } from '@/lib/time/compareTime';
+import { addMinutesToTime, isTimeAfter, normalizeEndTimeSelection } from '@/lib/time/compareTime';
 import { formatDurationMinutes, formatTime, parseDateString, toDateString } from '@/lib/time/formatTime';
 
 import {
-  validateRepeatDays,
+  normalizeRepeatSettings,
   validateRepeatEndDate,
   validateTodoTimes,
   validateTodoTitle,
@@ -93,7 +93,7 @@ export function TodoFormModal({
 
 }: TodoFormModalProps) {
 
-  const { getRepeatRuleForSeries } = useTodoContext();
+  const { getRepeatRuleForTodo } = useTodoContext();
 
   const [form, setForm] = useState<TodoFormValues>(() => createDefaultFormValues(selectedDate));
 
@@ -123,17 +123,15 @@ export function TodoFormModal({
 
       const [eh, em] = editingTodo.endTime.split(':').map(Number);
 
-      const start = new Date(selectedDate);
+      const start = parseDateString(editingTodo.targetDate);
 
       start.setHours(sh, sm, 0, 0);
 
-      const end = new Date(selectedDate);
+      const end = parseDateString(editingTodo.targetDate);
 
       end.setHours(eh, em, 0, 0);
 
-      const seriesId = editingTodo.seriesId ?? editingTodo.id;
-
-      const repeatRule = getRepeatRuleForSeries(seriesId);
+      const repeatRule = getRepeatRuleForTodo(editingTodo);
 
 
 
@@ -149,11 +147,11 @@ export function TodoFormModal({
 
         endTime: end,
 
-        targetDate: toDateString(selectedDate),
+        targetDate: editingTodo.targetDate,
 
-        repeatEnabled: Boolean(editingTodo.seriesId),
+        repeatEnabled: repeatRule?.repeatEnabled ?? Boolean(editingTodo.seriesId),
 
-        repeatDays: repeatRule?.repeatDays ?? [],
+        repeatDays: repeatRule ? [...repeatRule.repeatDays] : [],
 
         repeatDate: repeatRule?.repeatDate ? parseDateString(repeatRule.repeatDate) : null,
 
@@ -167,7 +165,7 @@ export function TodoFormModal({
 
     setError('');
 
-  }, [visible, editingTodo, selectedDate, getRepeatRuleForSeries]);
+  }, [visible, editingTodo, selectedDate, getRepeatRuleForTodo]);
 
 
 
@@ -178,20 +176,25 @@ export function TodoFormModal({
 
 
   const toggleRepeatDay = (dayIndex: number) => {
-
     setForm((prev) => ({
-
       ...prev,
-
       repeatDays: prev.repeatDays.includes(dayIndex)
-
         ? prev.repeatDays.filter((d) => d !== dayIndex)
-
-        : [...prev.repeatDays, dayIndex].sort(),
-
+        : [...prev.repeatDays, dayIndex].sort((a, b) => a - b),
     }));
-
   };
+
+  const toggleAllRepeatDays = () => {
+    setForm((prev) => ({
+      ...prev,
+      repeatDays:
+        prev.repeatDays.length === REPEAT_DAY_INDICES.length
+          ? []
+          : [...REPEAT_DAY_INDICES],
+    }));
+  };
+
+  const isAllRepeatDaysSelected = form.repeatDays.length === REPEAT_DAY_INDICES.length;
 
 
 
@@ -217,17 +220,17 @@ export function TodoFormModal({
 
     }
 
-    const repeatValidation = validateRepeatDays(form.repeatEnabled, form.repeatDays);
+    const repeatSettings = normalizeRepeatSettings(
+      form.repeatEnabled,
+      form.repeatDays,
+      form.repeatDate,
+    );
 
-    if (!repeatValidation.valid) {
-
-      setError(repeatValidation.message);
-
-      return;
-
-    }
-
-    const repeatEndValidation = validateRepeatEndDate(form.repeatEnabled, form.repeatDate, selectedDate);
+    const repeatEndValidation = validateRepeatEndDate(
+      repeatSettings.repeatEnabled,
+      repeatSettings.repeatDate,
+      parseDateString(form.targetDate),
+    );
 
     if (!repeatEndValidation.valid) {
 
@@ -242,7 +245,7 @@ export function TodoFormModal({
     setSaving(true);
 
     try {
-      await onSave({ ...form, targetDate: toDateString(selectedDate) });
+      await onSave({ ...form, ...repeatSettings, targetDate: form.targetDate });
       onClose();
     } catch {
       setError('저장에 실패했습니다. 다시 시도해 주세요.');
@@ -389,16 +392,31 @@ export function TodoFormModal({
 
             <>
 
-              <Text style={styles.label}>반복 요일</Text>
+              <View style={styles.repeatDayHeader}>
+                <Text style={styles.repeatDayLabel}>반복 요일 (선택)</Text>
+                <Pressable
+                  onPress={toggleAllRepeatDays}
+                  style={[styles.repeatAllChip, isAllRepeatDaysSelected && styles.repeatDayActive]}
+                >
+                  <Text
+                    style={[
+                      styles.repeatAllChipText,
+                      isAllRepeatDaysSelected && styles.repeatDayTextActive,
+                    ]}
+                  >
+                    매일
+                  </Text>
+                </Pressable>
+              </View>
 
               <View style={styles.repeatDays}>
 
                 {REPEAT_DAY_INDICES.map((dayIndex) => (
 
                   <Pressable
-
                     key={dayIndex}
-
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: form.repeatDays.includes(dayIndex) }}
                     onPress={() => toggleRepeatDay(dayIndex)}
 
                     style={[
@@ -437,20 +455,32 @@ export function TodoFormModal({
 
               <Text style={styles.label}>종료일 (선택)</Text>
 
-              <Pressable style={styles.timeButton} onPress={() => setPickerTarget('repeatEnd')}>
-
-                <Text style={[styles.timeValue, !form.repeatDate && styles.placeholder]}>
-
-                  {form.repeatDate ? toDateString(form.repeatDate) : '설정 안 함 (계속 반복)'}
-
-                </Text>
-
-              </Pressable>
+              <View style={styles.endDateField}>
+                <Pressable style={styles.timeButton} onPress={() => setPickerTarget('repeatEnd')}>
+                  <Text
+                    style={[
+                      styles.timeValue,
+                      !form.repeatDate && styles.placeholder,
+                      form.repeatDate && styles.endDateValue,
+                    ]}
+                  >
+                    {form.repeatDate ? toDateString(form.repeatDate) : '설정 안 함 (계속 반복)'}
+                  </Text>
+                </Pressable>
+                {form.repeatDate ? (
+                  <Pressable
+                    accessibilityLabel="종료일 삭제"
+                    onPress={() => setForm((prev) => ({ ...prev, repeatDate: null }))}
+                    style={styles.clearEndDateButton}
+                    hitSlop={8}
+                  >
+                    <Text style={styles.clearEndDateIcon}>×</Text>
+                  </Pressable>
+                ) : null}
+              </View>
 
               <Text style={styles.repeatHint}>
-
-                선택한 요일마다 반복됩니다. 종료일을 설정하면 해당 날짜까지만 일정이 생성됩니다.
-
+                요일을 고르면 해당 요일마다, 요일 없이 종료일만 설정하면 종료일까지 매일 반복됩니다.
               </Text>
 
             </>
@@ -523,7 +553,9 @@ export function TodoFormModal({
         minTime={form.startTime}
         onClose={() => setPickerTarget(null)}
 
-        onConfirm={(endTime) => setForm((prev) => ({ ...prev, endTime }))}
+        onConfirm={(endTime) =>
+          setForm((prev) => ({ ...prev, endTime: normalizeEndTimeSelection(endTime) }))
+        }
 
       />
 
@@ -535,11 +567,11 @@ export function TodoFormModal({
 
         value={form.repeatDate}
 
-        fallbackDate={selectedDate}
+        fallbackDate={form.repeatDate ?? parseDateString(form.targetDate)}
 
         title="종료일 (선택)"
 
-        minDate={selectedDate}
+        minDate={parseDateString(form.targetDate)}
 
         optional
 
@@ -703,6 +735,31 @@ const styles = StyleSheet.create({
 
   },
 
+  endDateField: {
+    position: 'relative',
+  },
+
+  endDateValue: {
+    paddingRight: spacing.xl,
+  },
+
+  clearEndDateButton: {
+    position: 'absolute',
+    right: spacing.sm,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 32,
+  },
+
+  clearEndDateIcon: {
+    fontSize: 22,
+    lineHeight: 24,
+    color: colors.textMuted,
+    fontWeight: '600',
+  },
+
   timeCaption: {
 
     fontSize: 12,
@@ -751,6 +808,35 @@ const styles = StyleSheet.create({
 
     marginTop: spacing.md,
 
+  },
+
+  repeatDayHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+  },
+
+  repeatDayLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+  },
+
+  repeatAllChip: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+
+  repeatAllChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textSecondary,
   },
 
   repeatDays: {

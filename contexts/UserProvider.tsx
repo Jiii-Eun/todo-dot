@@ -24,8 +24,8 @@ import {
   fetchUserByDisplayName,
   fetchUserFromServer,
   syncUserToServer,
-} from '@/lib/firebase/users';
-import { isFirebaseConfigured } from '@/lib/firebase/client';
+} from '@/lib/api/users';
+import { isApiConfigured } from '@/lib/api/client';
 import type { User } from '@/types/user';
 import { formatUserDisplay } from '@/types/user';
 
@@ -68,7 +68,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      setUser(remoteUser ?? localUser);
+      if (remoteUser) {
+        setUser({
+          ...localUser,
+          ...remoteUser,
+          id: remoteUser.id || localUser.id,
+        });
+      } else {
+        setUser(localUser);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -103,10 +111,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
       return { success: false, message: validation.message };
     }
 
-    if (!isFirebaseConfigured) {
+    if (!isApiConfigured) {
       return {
         success: false,
-        message: '다른 기기에서 접속하려면 Firebase 연동이 필요합니다.',
+        message: '다른 기기에서 접속하려면 서버 연결이 필요합니다.',
       };
     }
 

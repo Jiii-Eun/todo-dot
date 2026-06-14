@@ -21,12 +21,37 @@ export function toDateString(date: Date): string {
   return format(date, 'yyyy-MM-dd');
 }
 
+/** API/로컬 혼재 날짜 문자열을 yyyy-MM-dd로 통일 */
+export function normalizeDateString(value: string): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  if (value.length >= 10 && /^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) return toDateString(parsed);
+  return value;
+}
+
+/** API/로컬 혼재 시간 문자열을 HH:mm으로 통일 */
+export function normalizeTimeString(value: string): string {
+  const hm = value.match(/^(\d{1,2}):(\d{2})$/);
+  if (hm) return `${hm[1].padStart(2, '0')}:${hm[2]}`;
+
+  const hms = value.match(/^(\d{1,2}):(\d{2}):\d{2}$/);
+  if (hms) return `${hms[1].padStart(2, '0')}:${hms[2]}`;
+
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) return formatTime(parsed);
+
+  return value;
+}
+
 export function parseDateString(value: string): Date {
-  return parse(value, 'yyyy-MM-dd', new Date());
+  return parse(normalizeDateString(value), 'yyyy-MM-dd', new Date());
 }
 
 export function parseTimeOnDate(dateStr: string, timeStr: string): Date {
-  return parse(`${dateStr} ${timeStr}`, 'yyyy-MM-dd HH:mm', new Date());
+  const normalizedDate = normalizeDateString(dateStr);
+  const normalizedTime = normalizeTimeString(timeStr);
+  return parse(`${normalizedDate} ${normalizedTime}`, 'yyyy-MM-dd HH:mm', new Date());
 }
 
 export function formatDurationMinutes(start: Date, end: Date): string {

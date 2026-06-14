@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
+import Svg, { Circle, G } from 'react-native-svg';
 import { colors } from '@/constants/theme';
 
 interface CircularCountdownProps {
@@ -26,31 +26,32 @@ export function CircularCountdown({
 }: CircularCountdownProps) {
   const strokeDashoffset = CIRCUMFERENCE * (1 - progress);
   const ringColor = isDayEnded ? colors.textMuted : isOvertime ? colors.danger : colors.primary;
+  const center = SIZE / 2;
 
   return (
     <View style={styles.container}>
       <Svg width={SIZE} height={SIZE}>
         <Circle
-          cx={SIZE / 2}
-          cy={SIZE / 2}
+          cx={center}
+          cy={center}
           r={RADIUS}
           stroke={colors.border}
           strokeWidth={STROKE}
           fill="none"
         />
-        <Circle
-          cx={SIZE / 2}
-          cy={SIZE / 2}
-          r={RADIUS}
-          stroke={ringColor}
-          strokeWidth={STROKE}
-          fill="none"
-          strokeDasharray={`${CIRCUMFERENCE} ${CIRCUMFERENCE}`}
-          strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
-          rotation="-90"
-          origin={`${SIZE / 2}, ${SIZE / 2}`}
-        />
+        <G transform={`rotate(-90 ${center} ${center})`}>
+          <Circle
+            cx={center}
+            cy={center}
+            r={RADIUS}
+            stroke={ringColor}
+            strokeWidth={STROKE}
+            fill="none"
+            strokeDasharray={`${CIRCUMFERENCE} ${CIRCUMFERENCE}`}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+          />
+        </G>
       </Svg>
       <View style={styles.center}>
         <Text style={styles.caption}>{caption ?? (isOvertime ? '초과 시간' : '남은 시간')}</Text>

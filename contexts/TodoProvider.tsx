@@ -7,23 +7,25 @@ import React, {
   useState,
   type ReactNode,
 } from 'react';
-import { createId } from '@/lib/utils/id';
-import { formatTime, toDateString } from '@/lib/time/formatTime';
+import {
+  buildRepeatOccurrences,
+  expandTodosForDate,
+  getSeriesTodoIds,
+} from '@/lib/todo/repeat';
 import {
   loadRepeatRules,
   loadTodos,
   saveRepeatRules,
   saveTodos,
 } from '@/lib/local/storage';
-import {
-  buildRepeatOccurrences,
-  getSeriesTodoIds,
-} from '@/lib/todo/repeat';
+import { formatTime, toDateString } from '@/lib/time/formatTime';
+import { createId } from '@/lib/utils/id';
 import {
   deleteTodosFromServer,
   fetchTodosFromServer,
   syncTodosToServer,
-} from '@/lib/firebase/todos';
+} from '@/lib/api/todos';
+import { syncUserToServer } from '@/lib/api/users';
 import { sortTodos } from '@/lib/time/sortTodos';
 import { useUserContext } from '@/contexts/UserProvider';
 import type { Todo, TodoFormValues, TodoRepeatRule } from '@/types/todo';
@@ -34,6 +36,7 @@ interface TodoContextValue {
   isLoading: boolean;
   getTodosForDate: (date: Date) => Todo[];
   getRepeatRuleForSeries: (seriesId: string) => TodoRepeatRule | null;
+  getRepeatRuleForTodo: (todo: Todo) => TodoRepeatRule | null;
   createTodo: (values: TodoFormValues) => Promise<void>;
   updateTodo: (id: string, values: TodoFormValues) => Promise<void>;
   toggleComplete: (id: string) => Promise<void>;
@@ -65,6 +68,53 @@ function buildTodoFromForm(
   };
 }
 
+function mergeByUpdatedAt<T extends { id: string; updatedAt?: string }>(
+  localItems: T[],
+  remoteItems: T[],
+): T[] {
+  const map = new Map<string, T>();
+
+  for (const item of localItems) {
+    if (item.id) map.set(item.id, item);
+  }
+
+  for (const item of remoteItems) {
+    if (!item.id) continue;
+    const existing = map.get(item.id);
+    if (!existing) {
+      map.set(item.id, item);
+      continue;
+    }
+
+    const existingUpdatedAt = existing.updatedAt ?? '';
+    const nextUpdatedAt = item.updatedAt ?? '';
+    map.set(item.id, nextUpdatedAt >= existingUpdatedAt ? item : existing);
+  }
+
+  return Array.from(map.values());
+}
+
+function mergeRepeatRules(localRules: TodoRepeatRule[], remoteRules: TodoRepeatRule[]): TodoRepeatRule[] {
+  const map = new Map<string, TodoRepeatRule>();
+
+  const ruleScore = (rule: TodoRepeatRule) =>
+    (rule.repeatDays?.length ?? 0) * 10 + (rule.repeatDate ? 1 : 0);
+
+  for (const rule of [...localRules, ...remoteRules]) {
+    if (!rule.id) continue;
+
+    const existing = map.get(rule.id);
+    if (!existing) {
+      map.set(rule.id, rule);
+      continue;
+    }
+
+    map.set(rule.id, ruleScore(rule) >= ruleScore(existing) ? rule : existing);
+  }
+
+  return Array.from(map.values());
+}
+
 function buildRepeatRule(todoId: string, values: TodoFormValues, existing?: TodoRepeatRule): TodoRepeatRule {
   return {
     id: existing?.id ?? createId(),
@@ -77,7 +127,7 @@ function buildRepeatRule(todoId: string, values: TodoFormValues, existing?: Todo
 }
 
 export function TodoProvider({ children }: { children: ReactNode }) {
-  const { user } = useUserContext();
+  const { user, isLoading: isUserLoading } = useUserContext();
   const [todos, setTodos] = useState<Todo[]>([]);
   const [repeatRules, setRepeatRules] = useState<TodoRepeatRule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -95,19 +145,24 @@ export function TodoProvider({ children }: { children: ReactNode }) {
     setTodos(nextTodos);
     setRepeatRules(nextRules);
 
+    if (!user?.id) return;
+
     try {
-      await deleteTodosFromServer(removedTodoIds, removedRuleIds);
-      await syncTodosToServer(nextTodos, nextRules);
+      await syncUserToServer(user);
+      await deleteTodosFromServer(removedTodoIds, removedRuleIds, user.id);
+      await syncTodosToServer(nextTodos, nextRules, user.id);
     } catch (error) {
-      console.warn('[TodoProvider] Firebase sync failed:', error);
+      console.warn('[TodoProvider] API sync failed:', error);
     }
-  }, [todos, repeatRules]);
+  }, [todos, repeatRules, user]);
 
   const refreshTodos = useCallback(async () => {
-    if (!user) {
-      setTodos([]);
-      setRepeatRules([]);
-      setIsLoading(false);
+    if (isUserLoading || !user?.id) {
+      if (!isUserLoading && !user) {
+        setTodos([]);
+        setRepeatRules([]);
+      }
+      setIsLoading(isUserLoading);
       return;
     }
 
@@ -117,10 +172,8 @@ export function TodoProvider({ children }: { children: ReactNode }) {
       const localRules = await loadRepeatRules();
       const remote = await fetchTodosFromServer(user.id);
 
-      const mergedTodos =
-        remote.todos.length >= localTodos.length ? remote.todos : localTodos;
-      const mergedRules =
-        remote.rules.length >= localRules.length ? remote.rules : localRules;
+      const mergedTodos = mergeByUpdatedAt(localTodos, remote.todos);
+      const mergedRules = mergeRepeatRules(localRules, remote.rules);
 
       setTodos(mergedTodos.filter((t) => t.userId === user.id));
       setRepeatRules(mergedRules);
@@ -129,7 +182,7 @@ export function TodoProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, isUserLoading]);
 
   useEffect(() => {
     void refreshTodos();
@@ -140,16 +193,23 @@ export function TodoProvider({ children }: { children: ReactNode }) {
     [repeatRules],
   );
 
+  const getRepeatRuleForTodo = useCallback(
+    (todo: Todo) => {
+      const seriesId = todo.seriesId ?? todo.id;
+      return repeatRules.find((rule) => rule.todoId === seriesId) ?? null;
+    },
+    [repeatRules],
+  );
+
   const getTodosForDate = useCallback(
     (date: Date) => {
       if (!user) return [];
       const dateStr = toDateString(date);
-      const filtered = todos.filter(
-        (todo) => todo.userId === user.id && todo.targetDate === dateStr,
-      );
-      return sortTodos(filtered);
+      const userTodos = todos.filter((todo) => todo.userId === user.id);
+      const expanded = expandTodosForDate(userTodos, repeatRules, dateStr);
+      return sortTodos(expanded.map(({ repeatRule: _repeatRule, ...todo }) => todo));
     },
-    [todos, user],
+    [todos, repeatRules, user],
   );
 
   const createTodo = useCallback(
@@ -273,6 +333,7 @@ export function TodoProvider({ children }: { children: ReactNode }) {
       isLoading,
       getTodosForDate,
       getRepeatRuleForSeries,
+      getRepeatRuleForTodo,
       createTodo,
       updateTodo,
       toggleComplete,
@@ -284,6 +345,7 @@ export function TodoProvider({ children }: { children: ReactNode }) {
       isLoading,
       getTodosForDate,
       getRepeatRuleForSeries,
+      getRepeatRuleForTodo,
       createTodo,
       updateTodo,
       toggleComplete,

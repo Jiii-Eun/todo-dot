@@ -11,18 +11,17 @@ alwaysApply: true
 - TypeScript `any` — 명시적 interface/type 또는 `unknown` + 타입 가드.
 - React 컴포넌트 내 `document.getElementById` 등 vanilla DOM 조작 — `useRef`, state, RN 컴포넌트 사용.
 
-## Firebase / 데이터
-- Firebase config(`EXPO_PUBLIC_FIREBASE_*`)만 클라이언트에 노출. Admin SDK service account key는 **절대** 앱 번들에 포함하지 않음.
+## API / 데이터
+- 클라이언트에는 `EXPO_PUBLIC_API_URL`만 노출. MongoDB URI·서버 시크릿은 **절대** 앱 번들에 포함하지 않음.
 - `.env` / 시크릿 파일 커밋 금지.
 
 ## 예시
 
 ```typescript
 // ❌ BAD
-const data: any = await getDocs(collection(db, 'todos'));
+const data: any = await fetch('/todos').then((r) => r.json());
 
 // ✅ GOOD
-interface TodoDocument { title: string; userId: string; }
-const snapshot = await getDocs(query(collection(db, 'todos'), where('userId', '==', userId)));
-const todos = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() as TodoDocument }));
+interface TodoResponse { id: string; userId: string; title: string; }
+const data = await apiRequest<TodoResponse[]>(`/todos?userId=${userId}`, { userId });
 ```

@@ -20,11 +20,20 @@ export function validateTodoTitle(title: string): TodoValidation {
   return { valid: true, message: '' };
 }
 
-export function validateRepeatDays(repeatEnabled: boolean, repeatDays: number[]): TodoValidation {
-  if (repeatEnabled && repeatDays.length === 0) {
-    return { valid: false, message: '반복 요일을 하나 이상 선택해 주세요.' };
+export function normalizeRepeatSettings(
+  repeatEnabled: boolean,
+  repeatDays: number[],
+  repeatDate?: Date | null,
+): { repeatEnabled: boolean; repeatDays: number[]; repeatDate: Date | null } {
+  if (!repeatEnabled) {
+    return { repeatEnabled: false, repeatDays: [], repeatDate: null };
   }
-  return { valid: true, message: '' };
+
+  if (repeatDays.length > 0 || repeatDate) {
+    return { repeatEnabled: true, repeatDays, repeatDate: repeatDate ?? null };
+  }
+
+  return { repeatEnabled: false, repeatDays: [], repeatDate: null };
 }
 
 export function validateRepeatEndDate(

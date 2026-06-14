@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { navigateToWelcomeScreen } from '@/lib/navigation/routes';
-import { addDays, subDays } from 'date-fns';
+import { addDays, isSameDay, startOfDay, subDays } from 'date-fns';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityBarChart } from '@/components/charts/ActivityBarChart';
 import { CalendarSheet } from '@/components/calendar/CalendarSheet';
@@ -19,9 +19,11 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Logo } from '@/components/ui/Logo';
 import { ScreenEntrance } from '@/components/ui/ScreenEntrance';
 import { ProgressBar } from '@/components/ui/ProgressBar';
-import { colors, spacing } from '@/constants/theme';
+import { Toast } from '@/components/ui/Toast';
+import { colors, radius, spacing } from '@/constants/theme';
 import { useTodoContext } from '@/contexts/TodoProvider';
 import { useUserContext } from '@/contexts/UserProvider';
+import { useToast } from '@/hooks/useToast';
 import { buildActivityDistribution } from '@/lib/time/activityDistribution';
 import { formatDateDisplay, toDateString } from '@/lib/time/formatTime';
 import { calculateAchievementRate } from '@/lib/time/sortTodos';
@@ -49,10 +51,15 @@ export default function MainScreen() {
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteAccountError, setDeleteAccountError] = useState('');
   const [accountActionError, setAccountActionError] = useState('');
+  const { message: toastMessage, showToast } = useToast();
 
   const todos = useMemo(() => getTodosForDate(selectedDate), [getTodosForDate, selectedDate]);
   const achievement = useMemo(() => calculateAchievementRate(todos), [todos]);
   const activityBuckets = useMemo(() => buildActivityDistribution(todos), [todos]);
+  const isTodaySelected = useMemo(
+    () => isSameDay(startOfDay(selectedDate), startOfDay(new Date())),
+    [selectedDate],
+  );
 
   if (isLoading || todosLoading) {
     return (
@@ -76,6 +83,7 @@ export default function MainScreen() {
       await updateTodo(editingTodo.id, values);
     } else {
       await createTodo(values);
+      showToast('할 일이 등록되었습니다.');
     }
   };
 
@@ -127,15 +135,42 @@ export default function MainScreen() {
         <Text style={styles.userName}>{displayName}</Text>
       </View>
 
-      <Pressable style={styles.dateNav} onPress={() => setCalendarVisible(true)}>
-        <Pressable onPress={() => setSelectedDate((d) => subDays(d, 1))}>
-          <Text style={styles.navArrow}>{'<'}</Text>
-        </Pressable>
-        <Text style={styles.dateText}>{formatDateDisplay(selectedDate)}</Text>
-        <Pressable onPress={() => setSelectedDate((d) => addDays(d, 1))}>
-          <Text style={styles.navArrow}>{'>'}</Text>
-        </Pressable>
-      </Pressable>
+      <View style={styles.dateNavWrap}>
+        <View style={styles.dateNav}>
+          <Pressable
+            accessibilityLabel="이전 날짜"
+            onPress={() => setSelectedDate((d) => subDays(d, 1))}
+            style={styles.navArrowButton}
+          >
+            <Text style={styles.navArrow}>{'<'}</Text>
+          </Pressable>
+          <View style={styles.dateCenter}>
+            <Pressable
+              accessibilityLabel="날짜 선택"
+              onPress={() => setCalendarVisible(true)}
+              style={styles.dateTextButton}
+            >
+              <Text style={styles.dateText}>{formatDateDisplay(selectedDate)}</Text>
+            </Pressable>
+            {!isTodaySelected ? (
+              <Pressable
+                accessibilityLabel="오늘로 이동"
+                onPress={() => setSelectedDate(startOfDay(new Date()))}
+                style={styles.todayButton}
+              >
+                <Text style={styles.todayButtonText}>오늘로 이동</Text>
+              </Pressable>
+            ) : null}
+          </View>
+          <Pressable
+            accessibilityLabel="다음 날짜"
+            onPress={() => setSelectedDate((d) => addDays(d, 1))}
+            style={styles.navArrowButton}
+          >
+            <Text style={styles.navArrow}>{'>'}</Text>
+          </Pressable>
+        </View>
+      </View>
 
       <FlatList
         data={todos}
@@ -158,9 +193,10 @@ export default function MainScreen() {
             </Pressable>
           </View>
         }
-        renderItem={({ item }) => (
+        renderItem={({ item, index }) => (
           <TodoCard
             todo={item}
+            index={index}
             onToggle={toggleComplete}
             onEdit={(todo) => {
               setEditingTodo(todo);
@@ -192,6 +228,8 @@ export default function MainScreen() {
         }
       />
       </ScreenEntrance>
+
+      <Toast message={toastMessage} />
 
       <CalendarSheet
         visible={calendarVisible}
@@ -268,21 +306,49 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.primary,
   },
+  dateNavWrap: {
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+  },
   dateNav: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.md,
+    alignSelf: 'stretch',
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     backgroundColor: colors.surface,
     borderRadius: 12,
   },
+  dateCenter: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  todayButton: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.full,
+    backgroundColor: '#F3E8FF',
+    borderWidth: 1,
+    borderColor: colors.primaryLight,
+  },
+  todayButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  navArrowButton: {
+    paddingHorizontal: spacing.sm,
+  },
   navArrow: {
     fontSize: 18,
     color: colors.primary,
-    paddingHorizontal: spacing.sm,
+  },
+  dateTextButton: {
+    paddingVertical: spacing.xs,
   },
   dateText: {
     fontSize: 16,

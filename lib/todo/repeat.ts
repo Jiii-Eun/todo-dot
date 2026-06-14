@@ -4,10 +4,22 @@ import {
   getDatesInRange,
   getMondayBasedDayIndex,
   isDateInRepeatRange,
+  normalizeDateString,
   parseDateString,
   toDateString,
 } from '@/lib/time/formatTime';
 import type { Todo, TodoRepeatRule, TodoWithRepeat } from '@/types/todo';
+
+/** 종료일만 설정된 경우(repeatDays 비어 있음) 매일 반복 */
+export function isDailyRepeatUntilEnd(rule: TodoRepeatRule): boolean {
+  return rule.repeatEnabled && rule.repeatDays.length === 0 && rule.repeatDate !== null;
+}
+
+function matchesRepeatWeekday(rule: TodoRepeatRule, date: Date): boolean {
+  if (isDailyRepeatUntilEnd(rule)) return true;
+  if (rule.repeatDays.length === 0) return false;
+  return rule.repeatDays.includes(getMondayBasedDayIndex(date));
+}
 
 export function expandTodosForDate(
   todos: Todo[],
@@ -20,29 +32,33 @@ export function expandTodosForDate(
   const seenSeriesOnDate = new Set<string>();
 
   for (const todo of todos) {
-    const rule = ruleMap.get(todo.id) ?? null;
+    if (normalizeDateString(todo.targetDate) !== dateStr) continue;
 
-    if (todo.targetDate === dateStr) {
-      result.push({ ...todo, repeatRule: rule });
-      if (todo.seriesId) seenSeriesOnDate.add(todo.seriesId);
-      continue;
-    }
+    const seriesKey = todo.seriesId ?? todo.id;
+    const rule = ruleMap.get(seriesKey) ?? null;
+    result.push({ ...todo, repeatRule: rule });
+    seenSeriesOnDate.add(seriesKey);
+  }
 
-    if (!rule || !todo.seriesId || seenSeriesOnDate.has(todo.seriesId)) continue;
+  for (const rule of ruleMap.values()) {
+    const seriesKey = rule.todoId;
+    if (seenSeriesOnDate.has(seriesKey)) continue;
 
-    const anchor = parseDateString(todo.targetDate);
-    const weekday = getMondayBasedDayIndex(targetDate);
+    const seriesRoot = todos.find((todo) => todo.id === seriesKey);
+    if (!seriesRoot) continue;
+
+    const anchor = parseDateString(normalizeDateString(seriesRoot.targetDate));
 
     if (
-      rule.repeatDays.includes(weekday) &&
+      matchesRepeatWeekday(rule, targetDate) &&
       isDateInRepeatRange(targetDate, anchor, rule.repeatDate)
     ) {
       result.push({
-        ...todo,
+        ...seriesRoot,
         targetDate: dateStr,
         repeatRule: rule,
       });
-      seenSeriesOnDate.add(todo.seriesId);
+      seenSeriesOnDate.add(seriesKey);
     }
   }
 
@@ -50,7 +66,7 @@ export function expandTodosForDate(
 }
 
 export function buildRepeatOccurrences(template: Todo, rule: TodoRepeatRule): Todo[] {
-  if (!rule.repeatEnabled || rule.repeatDays.length === 0) return [template];
+  if (!rule.repeatEnabled) return [template];
 
   const start = parseDateString(template.targetDate);
   const end = rule.repeatDate ? parseDateString(rule.repeatDate) : addDays(start, 56);
@@ -59,8 +75,7 @@ export function buildRepeatOccurrences(template: Todo, rule: TodoRepeatRule): To
   const occurrences: Todo[] = [];
 
   for (const date of dates) {
-    const weekday = getMondayBasedDayIndex(date);
-    if (!rule.repeatDays.includes(weekday)) continue;
+    if (!matchesRepeatWeekday(rule, date)) continue;
 
     const dateStr = toDateString(date);
     occurrences.push({

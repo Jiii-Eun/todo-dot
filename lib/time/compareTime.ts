@@ -22,3 +22,11 @@ export function addMinutesToTime(date: Date, minutesToAdd: number): Date {
   next.setMinutes(next.getMinutes() + minutesToAdd);
   return next;
 }
+
+/** 종료 시간 23:00 선택 시 해당 시간대 끝(23:59)으로 맞춤 */
+export function normalizeEndTimeSelection(date: Date): Date {
+  if (date.getHours() === 23 && date.getMinutes() === 0) {
+    return applyTimeToDate(date, 23, 59);
+  }
+  return date;
+}

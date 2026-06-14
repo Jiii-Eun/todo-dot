@@ -1,0 +1,33 @@
+---
+description: MongoDB REST API 스키마, 엔드포인트, 로컬+서버 동기화 규칙
+globs: "{**/lib/api/**,**/types/**,**/contexts/**,**/hooks/use*.ts}"
+alwaysApply: false
+---
+
+# Data Layer Rules
+
+## MongoDB 컬렉션 (백엔드)
+- `users`: _id, nickname, tag, createdAt
+- `todos`: _id, userId, title, description, priority, startTime, endTime, targetDate, isCompleted, seriesId, createdAt, updatedAt
+- `todo_repeat_rules`: _id, todoId, userId, repeatEnabled, repeatDays, repeatDate, createdAt
+
+## REST API (기본 `http://localhost:5000`)
+- Users: `POST /users`, `POST /users/login`, `GET /users/:id`, `DELETE /users/:id`
+- Todos (`X-User-Id` 헤더): `GET /todos?userId=`, `POST /todos/bulk-upsert`, `POST /todos/bulk-delete`
+- Repeat Rules (`X-User-Id` 헤더): `GET /todo-repeat-rules?userId=`, `POST /todo-repeat-rules/bulk-upsert`
+- Health: `GET /health`
+
+## 클라이언트 (`lib/api/`)
+- `client.ts`: fetch 래퍼, `EXPO_PUBLIC_API_URL`, `X-User-Id` 헤더
+- `users.ts`, `todos.ts`: Context에서 호출하는 서버 동기화 함수
+
+## 로컬 + 서버
+- mutation은 AsyncStorage에 먼저 반영 후 API 동기화.
+- API 실패 시 `console.warn`, 로컬 데이터 유지.
+- refresh 시 local vs remote 배열 길이로 병합 (개수 많은 쪽 우선).
+- 계정 삭제: `DELETE /users/:id` (todos + repeat_rules cascade).
+
+## 검증
+- `endTime > startTime` (같은 targetDate 기준).
+- title 필수, description 선택.
+- priority: 0=낮음, 1=보통, 2=높음.

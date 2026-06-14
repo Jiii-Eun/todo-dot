@@ -1,66 +1,77 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { PRIORITY_COLORS, PRIORITY_STARS } from '@/constants/priority';
+import { motion } from '@/constants/motion';
 import { colors, radius, spacing } from '@/constants/theme';
 import { cardShadow } from '@/lib/styles/shadow';
 import type { Todo } from '@/types/todo';
 
 interface TodoCardProps {
   todo: Todo;
+  index?: number;
   onToggle: (id: string) => void;
   onEdit: (todo: Todo) => void;
   onDelete: (todo: Todo) => void;
   onPress: (todo: Todo) => void;
 }
 
-export function TodoCard({ todo, onToggle, onEdit, onDelete, onPress }: TodoCardProps) {
+export function TodoCard({
+  todo,
+  index = 0,
+  onToggle,
+  onEdit,
+  onDelete,
+  onPress,
+}: TodoCardProps) {
   const borderColor = PRIORITY_COLORS[todo.priority];
 
   return (
-    <Pressable
-      onPress={() => onPress(todo)}
-      style={({ pressed }) => [
-        styles.card,
-        cardShadow,
-        { borderLeftColor: borderColor },
-        pressed && styles.pressed,
-      ]}
+    <Animated.View
+      entering={FadeInDown.duration(motion.normal)
+        .delay(Math.min(index * 60, 360))
+        .easing(motion.easing)}
     >
-      <Pressable
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked: todo.isCompleted }}
-        onPress={() => onToggle(todo.id)}
-        style={styles.iconButton}
-      >
-        <Text style={styles.checkboxIcon}>{todo.isCompleted ? '☑' : '□'}</Text>
-      </Pressable>
+      <View style={[styles.card, cardShadow, { borderLeftColor: borderColor }]}>
+        <Pressable
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: todo.isCompleted }}
+          onPress={() => onToggle(todo.id)}
+          style={styles.iconButton}
+        >
+          <Text style={styles.checkboxIcon}>{todo.isCompleted ? '☑' : '□'}</Text>
+        </Pressable>
 
-      <View style={styles.content}>
-        <Text style={[styles.title, todo.isCompleted && styles.completedTitle]} numberOfLines={1}>
-          {todo.title}
-        </Text>
-        <Text style={styles.time}>
-          {todo.startTime} ~ {todo.endTime}
-        </Text>
+        <Pressable
+          onPress={() => onPress(todo)}
+          style={({ pressed }) => [styles.content, pressed && styles.pressed]}
+        >
+          <Text style={[styles.title, todo.isCompleted && styles.completedTitle]} numberOfLines={1}>
+            {todo.title}
+          </Text>
+          <Text style={styles.time}>
+            {todo.startTime} ~ {todo.endTime}
+          </Text>
+        </Pressable>
+
+        <Text style={styles.star}>{PRIORITY_STARS[todo.priority]}</Text>
+
+        <Pressable
+          accessibilityLabel="할 일 수정"
+          onPress={() => onEdit(todo)}
+          style={styles.iconButton}
+        >
+          <Text style={styles.editIcon}>✏️</Text>
+        </Pressable>
+
+        <Pressable
+          accessibilityLabel="할 일 삭제"
+          onPress={() => onDelete(todo)}
+          style={styles.iconButton}
+        >
+          <Text style={styles.deleteIcon}>🗑</Text>
+        </Pressable>
       </View>
-
-      <Text style={styles.star}>{PRIORITY_STARS[todo.priority]}</Text>
-
-      <Pressable
-        accessibilityLabel="할 일 수정"
-        onPress={() => onEdit(todo)}
-        style={styles.iconButton}
-      >
-        <Text style={styles.editIcon}>✏️</Text>
-      </Pressable>
-
-      <Pressable
-        accessibilityLabel="할 일 삭제"
-        onPress={() => onDelete(todo)}
-        style={styles.iconButton}
-      >
-        <Text style={styles.deleteIcon}>🗑</Text>
-      </Pressable>
-    </Pressable>
+    </Animated.View>
   );
 }
 

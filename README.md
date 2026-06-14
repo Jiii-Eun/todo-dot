@@ -2,12 +2,12 @@
 
 > 할 일을 관리하는 것이 아니라, **남은 시간을 관리한다.**
 
-시간 중심(Time-Driven) 생산성 관리 모바일 앱입니다. Expo + React Native + TypeScript + Firebase로 구성됩니다.
+시간 중심(Time-Driven) 생산성 관리 모바일 앱입니다. Expo + React Native + TypeScript + MongoDB REST API로 구성됩니다.
 
 ## 기술 스택
 
 - **Frontend:** Expo, React Native, TypeScript, expo-router
-- **Backend:** Firebase Firestore
+- **Backend:** MongoDB (Mongoose) REST API — 기본 `http://localhost:5000`
 - **로컬 저장:** AsyncStorage (오프라인 + 서버 동기화)
 
 ## 시작하기
@@ -18,39 +18,36 @@
 npm install
 ```
 
-### 2. Firebase 프로젝트 설정
+### 2. API 서버 실행
 
-1. [Firebase Console](https://console.firebase.google.com/)에서 프로젝트 생성
-2. **Firestore Database** 생성 (테스트 모드 또는 rules 배포)
-3. **프로젝트 설정 → 일반 → 내 앱**에서 웹 앱 추가 후 config 복사
-
-### 3. 환경 변수
-
-`.env.example`을 복사해 `.env`를 만들고 Firebase config 값을 입력하세요.
+MongoDB 백엔드 서버를 **5000번 포트**에서 실행하세요.
 
 ```bash
-cp .env.example .env
+# 백엔드 프로젝트에서 (별도 저장소)
+npm start
 ```
+
+연결 확인:
+
+```bash
+curl http://localhost:5000/health
+```
+
+### 3. 환경 변수 (선택)
+
+API 주소를 바꿀 때만 `.env`에 설정합니다. 기본값은 `http://localhost:5000`입니다.
 
 ```env
-EXPO_PUBLIC_FIREBASE_API_KEY=...
-EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=...
-EXPO_PUBLIC_FIREBASE_PROJECT_ID=...
-EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=...
-EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
-EXPO_PUBLIC_FIREBASE_APP_ID=...
+EXPO_PUBLIC_API_URL=http://localhost:5000
 ```
 
-Firebase 미설정 시에도 **로컬(AsyncStorage)만으로** 동작합니다.
+서버 미연결 시에도 **로컬(AsyncStorage)만으로** 동작합니다.
 
-### 4. Firestore Rules & Indexes
+> **로컬 개발 참고**
+> - Android 에뮬레이터: `http://10.0.2.2:5000`
+> - 실기기: PC IP 주소 사용 (예: `http://192.168.0.10:5000`)
 
-Firebase Console 또는 CLI로 배포:
-
-- `firebase/firestore.rules`
-- `firebase/firestore.indexes.json`
-
-### 5. 앱 실행
+### 4. 앱 실행
 
 ```bash
 npm start
@@ -66,7 +63,7 @@ Android는 APK 파일을 받아 **직접 설치(사이드로드)** 할 수 있�
 # Expo 로그인 (최초 1회)
 eas login
 
-# Firebase 환경 변수 업로드 (최초 1회, .env 설정 후)
+# API URL 환경 변수 업로드 (최초 1회, .env 설정 후)
 eas env:push --environment preview --path .env
 
 # APK 빌드 (EAS 무료 플랜 — 월 빌드 횟수 제한 있음)
@@ -143,7 +140,7 @@ npx expo export --platform web
 
 `dist/` 폴더를 Vercel에 배포하면 아이콘·앱 이름이 설치 화면에 표시됩니다.
 
-## Firestore 컬렉션
+## MongoDB 컬렉션
 
 | 컬렉션 | 설명 |
 |--------|------|
@@ -165,8 +162,8 @@ npx expo export --platform web
 app/                 # expo-router 화면
 components/          # UI 컴포넌트
 contexts/            # User, Todo Provider
-lib/firebase/        # Firestore 연동
+lib/api/             # REST API 연동
+lib/local/           # AsyncStorage
 lib/todo/            # 반복 일정 로직
-firebase/            # Firestore rules, indexes
 .cursor/rules/       # Cursor AI 규칙
 ```
