@@ -7,7 +7,7 @@
 ## 기술 스택
 
 - **Frontend:** Expo, React Native, TypeScript, expo-router
-- **Backend:** MongoDB (Mongoose) REST API — 기본 `http://localhost:5000`
+- **Backend:** MongoDB (Mongoose) REST API — 기본 `https://todo-dot-server.onrender.com`
 - **로컬 저장:** AsyncStorage (오프라인 + 서버 동기화)
 
 ## 시작하기
@@ -35,9 +35,10 @@ curl http://localhost:5000/health
 
 ### 3. 환경 변수 (선택)
 
-API 주소를 바꿀 때만 `.env`에 설정합니다. 기본값은 `http://localhost:5000`입니다.
+API 주소를 바꿀 때만 `.env`에 설정합니다. 기본값은 `https://todo-dot-server.onrender.com`입니다.
 
 ```env
+# 로컬 백엔드 사용 시
 EXPO_PUBLIC_API_URL=http://localhost:5000
 ```
 
