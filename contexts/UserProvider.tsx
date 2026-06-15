@@ -20,10 +20,11 @@ import {
   saveUser,
 } from '@/lib/local/storage';
 import {
+  createUserOnServer,
   deleteUserFromServer,
+  ensureUserOnServer,
   fetchUserByDisplayName,
   fetchUserFromServer,
-  syncUserToServer,
 } from '@/lib/api/users';
 import { isApiConfigured } from '@/lib/api/client';
 import type { User } from '@/types/user';
@@ -75,6 +76,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
           id: remoteUser.id || localUser.id,
         });
       } else {
+        try {
+          await ensureUserOnServer(localUser);
+        } catch (error) {
+          console.warn('[UserProvider] ensure user on server failed:', error);
+        }
         setUser(localUser);
       }
     } finally {
@@ -100,7 +106,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
     };
 
     await saveUser(newUser);
-    await syncUserToServer(newUser);
+    try {
+      await createUserOnServer(newUser);
+    } catch {
+      return {
+        success: false,
+        message: '계정 생성에 실패했습니다. 네트워크 연결을 확인해 주세요.',
+      };
+    }
     setUser(newUser);
     return { success: true, message: '' };
   }, []);

@@ -74,8 +74,8 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
 
 export async function checkApiHealth(): Promise<boolean> {
   try {
-    const result = await apiRequest<{ ok?: boolean; status?: string }>('/health');
-    return result.ok === true || result.status === 'ok';
+    const result = await apiRequest<{ status?: string; mongo?: string }>('/health');
+    return result.status === 'ok' && result.mongo === 'connected';
   } catch {
     return false;
   }

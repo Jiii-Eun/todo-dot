@@ -14,10 +14,10 @@ alwaysApply: false
 
 ## REST API (기본 `http://localhost:5000`)
 
-- Users: `POST /users`, `POST /users/login`, `GET /users/:id`, `DELETE /users/:id`
-- Todos (`X-User-Id` 헤더): `GET /todos?userId=`, `POST /todos/bulk-upsert`, `POST /todos/bulk-delete`
-- Repeat Rules (`X-User-Id` 헤더): `GET /todo-repeat-rules?userId=`, `POST /todo-repeat-rules/bulk-upsert`
 - Health: `GET /health`
+- Users: `POST /users`, `POST /users/login`, `GET /users/:id`, `DELETE /users/:id`
+- Todos (`X-User-Id` 헤더): `GET /todos?userId=`, `POST /todos`, `PATCH /todos/:id`, `DELETE /todos/:id`, `PATCH /todos/bulk-upsert`, `DELETE /todos/bulk-delete`, `GET /todos/series/:seriesId/ids`
+- Repeat Rules (`X-User-Id` 헤더): `GET /todo-repeat-rules?userId=`, `PATCH /todo-repeat-rules/:id`, `PATCH /todo-repeat-rules/bulk-upsert`
 
 ## 클라이언트 (`lib/api/`)
 
@@ -28,7 +28,9 @@ alwaysApply: false
 
 - mutation은 AsyncStorage에 먼저 반영 후 API 동기화.
 - API 실패 시 `console.warn`, 로컬 데이터 유지.
-- refresh 시 local vs remote 배열 길이로 병합 (개수 많은 쪽 우선).
+- 일반 변경: `POST` 생성, `PATCH` 수정, `DELETE` 삭제 (변경분 diff).
+- 오프라인 동기화: `PATCH /todos/bulk-upsert`, `PATCH /todo-repeat-rules/bulk-upsert`.
+- refresh 시 local vs remote `updatedAt`으로 병합.
 - 계정 삭제: `DELETE /users/:id` (todos + repeat_rules cascade).
 
 ## 검증

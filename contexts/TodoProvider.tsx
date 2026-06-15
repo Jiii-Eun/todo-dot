@@ -21,11 +21,9 @@ import {
 import { formatTime, toDateString } from '@/lib/time/formatTime';
 import { createId } from '@/lib/utils/id';
 import {
-  deleteTodosFromServer,
   fetchTodosFromServer,
-  syncTodosToServer,
+  syncTodoChangesToServer,
 } from '@/lib/api/todos';
-import { syncUserToServer } from '@/lib/api/users';
 import { sortTodos } from '@/lib/time/sortTodos';
 import { useUserContext } from '@/contexts/UserProvider';
 import type { Todo, TodoFormValues, TodoRepeatRule } from '@/types/todo';
@@ -133,12 +131,8 @@ export function TodoProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const persist = useCallback(async (nextTodos: Todo[], nextRules: TodoRepeatRule[]) => {
-    const removedTodoIds = todos
-      .filter((todo) => !nextTodos.some((next) => next.id === todo.id))
-      .map((todo) => todo.id);
-    const removedRuleIds = repeatRules
-      .filter((rule) => !nextRules.some((next) => next.id === rule.id))
-      .map((rule) => rule.id);
+    const previousTodos = todos;
+    const previousRules = repeatRules;
 
     await saveTodos(nextTodos);
     await saveRepeatRules(nextRules);
@@ -148,9 +142,13 @@ export function TodoProvider({ children }: { children: ReactNode }) {
     if (!user?.id) return;
 
     try {
-      await syncUserToServer(user);
-      await deleteTodosFromServer(removedTodoIds, removedRuleIds, user.id);
-      await syncTodosToServer(nextTodos, nextRules, user.id);
+      await syncTodoChangesToServer(
+        previousTodos,
+        nextTodos,
+        previousRules,
+        nextRules,
+        user.id,
+      );
     } catch (error) {
       console.warn('[TodoProvider] API sync failed:', error);
     }
