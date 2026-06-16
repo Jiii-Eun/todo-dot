@@ -12,17 +12,37 @@ alwaysApply: false
 - `todos`: \_id, userId, title, description, priority, startTime, endTime, targetDate, isCompleted, seriesId, createdAt, updatedAt
 - `todo_repeat_rules`: \_id, todoId, userId, repeatEnabled, repeatDays, repeatDate, createdAt
 
-## REST API (기본 `http://localhost:5000`)
+## REST API
+
+- **프로덕션:** `https://todo-dot-server.onrender.com`
+- **로컬 개발:** `http://localhost:5000` (`.env`의 `DEFAULT_API_URL`로 변경)
+
+### 엔드포인트
 
 - Health: `GET /health`
 - Users: `POST /users`, `POST /users/login`, `GET /users/:id`, `DELETE /users/:id`
 - Todos (`X-User-Id` 헤더): `GET /todos?userId=`, `POST /todos`, `PATCH /todos/:id`, `DELETE /todos/:id`, `PATCH /todos/bulk-upsert`, `DELETE /todos/bulk-delete`, `GET /todos/series/:seriesId/ids`
 - Repeat Rules (`X-User-Id` 헤더): `GET /todo-repeat-rules?userId=`, `PATCH /todo-repeat-rules/:id`, `PATCH /todo-repeat-rules/bulk-upsert`
 
+## API URL 설정 (클라이언트)
+
+`EXPO_PUBLIC_API_URL`은 **사용하지 않음**. 아래 체인으로 전달한다.
+
+```
+.env  DEFAULT_API_URL
+  → app.config.js  extra.apiUrl
+  → expo-constants  manifest / expoConfig
+  → lib/api/client.ts  getApiBaseUrl()
+```
+
+- `.env` 변경 후 `npm start` 재시작 필요 (캐시 이슈 시 `npx expo start -c`).
+- EAS 빌드 시 `eas env:push`로 동일 `.env` 업로드.
+
 ## 클라이언트 (`lib/api/`)
 
-- `client.ts`: fetch 래퍼, `EXPO_PUBLIC_API_URL`, `X-User-Id` 헤더
-- `users.ts`, `todos.ts`: Context에서 호출하는 서버 동기화 함수
+- `client.ts`: fetch 래퍼, `getApiBaseUrl()`, `isApiConfigured()`, `X-User-Id` 헤더
+- `users.ts`: `createUserOnServer`, `ensureUserOnServer`, `fetchUserByDisplayName`, `deleteUserFromServer`
+- `todos.ts`: `syncTodoChangesToServer` (변경분 diff), `syncTodosToServer` (bulk), CRUD 헬퍼
 
 ## 로컬 + 서버
 

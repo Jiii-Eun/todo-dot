@@ -12,7 +12,7 @@ alwaysApply: true
 - React 컴포넌트 내 `document.getElementById` 등 vanilla DOM 조작 — `useRef`, state, RN 컴포넌트 사용.
 
 ## API / 데이터
-- 클라이언트에는 `EXPO_PUBLIC_API_URL`만 노출. MongoDB URI·서버 시크릿은 **절대** 앱 번들에 포함하지 않음.
+- API URL은 `.env`의 `DEFAULT_API_URL` → `app.config.js` `extra.apiUrl`로 앱에 전달. MongoDB URI·서버 시크릿은 **절대** 앱 번들에 포함하지 않음.
 - `.env` / 시크릿 파일 커밋 금지.
 
 ## 예시

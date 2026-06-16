@@ -59,14 +59,23 @@ export function mapUserResponse(data: unknown, fallbackId?: string): User | null
   if (!payload) return null;
 
   const id = resolveId(payload, fallbackId);
-  if (!id || payload.nickname == null || payload.tag == null || !payload.createdAt) {
+  const tag =
+    typeof payload.tag === 'string' ? Number.parseInt(payload.tag, 10) : payload.tag;
+
+  if (
+    !id ||
+    !payload.nickname ||
+    tag == null ||
+    Number.isNaN(tag) ||
+    !payload.createdAt
+  ) {
     return null;
   }
 
   return {
     id,
-    nickname: payload.nickname,
-    tag: payload.tag,
+    nickname: payload.nickname.trim(),
+    tag,
     createdAt: payload.createdAt,
   };
 }

@@ -118,7 +118,7 @@ function diffRepeatRules(previous: TodoRepeatRule[], next: TodoRepeatRule[]) {
 }
 
 export async function createTodoOnServer(todo: Todo, userId: string): Promise<void> {
-  if (!isApiConfigured || !isValidUuid(userId)) return;
+  if (!isApiConfigured() || !isValidUuid(userId)) return;
 
   try {
     await apiRequest('/todos', {
@@ -140,7 +140,7 @@ export async function updateTodoOnServer(
   patch: TodoPatch,
   userId: string,
 ): Promise<void> {
-  if (!isApiConfigured || !isValidUuid(userId) || !isValidUuid(todoId)) return;
+  if (!isApiConfigured() || !isValidUuid(userId) || !isValidUuid(todoId)) return;
 
   await apiRequest(`/todos/${todoId}`, {
     method: 'PATCH',
@@ -150,7 +150,7 @@ export async function updateTodoOnServer(
 }
 
 export async function deleteTodoOnServer(todoId: string, userId: string): Promise<void> {
-  if (!isApiConfigured || !isValidUuid(userId) || !isValidUuid(todoId)) return;
+  if (!isApiConfigured() || !isValidUuid(userId) || !isValidUuid(todoId)) return;
 
   await apiRequest<void>(`/todos/${todoId}`, {
     method: 'DELETE',
@@ -159,7 +159,7 @@ export async function deleteTodoOnServer(todoId: string, userId: string): Promis
 }
 
 export async function bulkUpsertTodosOnServer(todos: Todo[], userId: string): Promise<void> {
-  if (!isApiConfigured || !isValidUuid(userId)) return;
+  if (!isApiConfigured() || !isValidUuid(userId)) return;
 
   const syncedTodos = prepareTodosForSync(todos, userId);
   if (syncedTodos.length === 0) return;
@@ -172,7 +172,7 @@ export async function bulkUpsertTodosOnServer(todos: Todo[], userId: string): Pr
 }
 
 export async function bulkDeleteTodosOnServer(todoIds: string[], userId: string): Promise<void> {
-  if (!isApiConfigured || !isValidUuid(userId) || todoIds.length === 0) return;
+  if (!isApiConfigured() || !isValidUuid(userId) || todoIds.length === 0) return;
 
   const ids = todoIds.filter((id) => isValidUuid(id));
   if (ids.length === 0) return;
@@ -193,7 +193,7 @@ export async function upsertRepeatRuleOnServer(
   rule: TodoRepeatRule,
   userId: string,
 ): Promise<void> {
-  if (!isApiConfigured || !isValidUuid(userId) || !isValidUuid(rule.id)) return;
+  if (!isApiConfigured() || !isValidUuid(userId) || !isValidUuid(rule.id)) return;
 
   await apiRequest(`/todo-repeat-rules/${rule.id}`, {
     method: 'PATCH',
@@ -206,7 +206,7 @@ export async function bulkUpsertRepeatRulesOnServer(
   rules: TodoRepeatRule[],
   userId: string,
 ): Promise<void> {
-  if (!isApiConfigured || !isValidUuid(userId) || rules.length === 0) return;
+  if (!isApiConfigured() || !isValidUuid(userId) || rules.length === 0) return;
 
   const payloads = rules.map((rule) => toRepeatRulePayload(rule, userId));
 
@@ -242,7 +242,7 @@ export async function syncTodoChangesToServer(
   nextRules: TodoRepeatRule[],
   userId: string,
 ): Promise<void> {
-  if (!isApiConfigured || !isValidUuid(userId)) return;
+  if (!isApiConfigured() || !isValidUuid(userId)) return;
 
   const { added, updated, removedIds } = diffByUpdatedAt(previousTodos, nextTodos);
   const changedRules = diffRepeatRules(previousRules, nextRules);
@@ -272,7 +272,7 @@ export async function syncTodosToServer(
   rules: TodoRepeatRule[],
   userId: string,
 ): Promise<void> {
-  if (!isApiConfigured || !isValidUuid(userId)) return;
+  if (!isApiConfigured() || !isValidUuid(userId)) return;
 
   const syncedTodos = prepareTodosForSync(todos, userId);
   const syncedTodoIds = new Set(syncedTodos.map((todo) => todo.id));
@@ -293,7 +293,7 @@ export async function fetchTodosFromServer(userId: string): Promise<{
   todos: Todo[];
   rules: TodoRepeatRule[];
 }> {
-  if (!isApiConfigured || !isValidUuid(userId)) return { todos: [], rules: [] };
+  if (!isApiConfigured() || !isValidUuid(userId)) return { todos: [], rules: [] };
 
   const [todoData, ruleData] = await Promise.all([
     apiRequest<unknown>(`/todos?userId=${encodeURIComponent(userId)}`, { userId }),
@@ -310,7 +310,7 @@ export async function fetchSeriesTodoIdsFromServer(
   seriesId: string,
   userId: string,
 ): Promise<string[]> {
-  if (!isApiConfigured || !isValidUuid(userId) || !isValidUuid(seriesId)) return [];
+  if (!isApiConfigured() || !isValidUuid(userId) || !isValidUuid(seriesId)) return [];
 
   const data = await apiRequest<unknown>(
     `/todos/series/${encodeURIComponent(seriesId)}/ids`,

@@ -14,7 +14,7 @@ function isAppRoute(segment: string | undefined): boolean {
  * Welcome and main must use different paths — both used to be "/" and logout showed a blank screen.
  */
 export function AuthNavigation() {
-  const { user, isLoading, entryMode } = useUserContext();
+  const { user, isLoading } = useUserContext();
   const segments = useSegments();
   const router = useRouter();
   const segmentKey = segments.join('/');
@@ -22,7 +22,7 @@ export function AuthNavigation() {
   useEffect(() => {
     if (isLoading) return;
 
-    const shouldBeInApp = Boolean(user && entryMode !== 'login');
+    const shouldBeInApp = Boolean(user);
     const inApp = isAppRoute(segments[0]);
 
     if (shouldBeInApp && !inApp) {
@@ -33,7 +33,7 @@ export function AuthNavigation() {
     if (!shouldBeInApp && inApp) {
       router.replace(WELCOME_ROUTE);
     }
-  }, [user, isLoading, entryMode, segmentKey, router, segments]);
+  }, [user, isLoading, segmentKey, router, segments]);
 
   return null;
 }

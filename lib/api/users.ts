@@ -13,7 +13,7 @@ function userPayload(user: User) {
 
 /** 신규 가입 시 1회 호출. 409 등 실패 시 예외를 그대로 던진다. */
 export async function createUserOnServer(user: User): Promise<void> {
-  if (!isApiConfigured) return;
+  if (!isApiConfigured()) return;
 
   await apiRequest('/users', {
     method: 'POST',
@@ -23,7 +23,7 @@ export async function createUserOnServer(user: User): Promise<void> {
 
 /** 로컬에만 있는 계정을 서버에 등록. 이미 있으면 POST를 건너뛴다. */
 export async function ensureUserOnServer(user: User): Promise<void> {
-  if (!isApiConfigured) return;
+  if (!isApiConfigured()) return;
 
   const existing = await fetchUserFromServer(user.id);
   if (existing) return;
@@ -42,7 +42,7 @@ export async function ensureUserOnServer(user: User): Promise<void> {
 }
 
 export async function deleteUserFromServer(userId: string): Promise<void> {
-  if (!isApiConfigured || !userId) return;
+  if (!isApiConfigured() || !userId) return;
 
   await apiRequest<void>(`/users/${userId}`, {
     method: 'DELETE',
@@ -50,7 +50,7 @@ export async function deleteUserFromServer(userId: string): Promise<void> {
 }
 
 export async function fetchUserFromServer(userId: string): Promise<User | null> {
-  if (!isApiConfigured || !userId) return null;
+  if (!isApiConfigured() || !userId) return null;
 
   try {
     const data = await apiRequest<unknown>(`/users/${userId}`);
@@ -67,7 +67,7 @@ export async function fetchUserByDisplayName(
   nickname: string,
   tag: number,
 ): Promise<User | null> {
-  if (!isApiConfigured) return null;
+  if (!isApiConfigured()) return null;
 
   try {
     const data = await apiRequest<unknown>('/users/login', {

@@ -124,7 +124,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       return { success: false, message: validation.message };
     }
 
-    if (!isApiConfigured) {
+    if (!isApiConfigured()) {
       return {
         success: false,
         message: '다른 기기에서 접속하려면 서버 연결이 필요합니다.',
@@ -136,14 +136,23 @@ export function UserProvider({ children }: { children: ReactNode }) {
       return { success: false, message: '닉네임#1234 형태로 입력해 주세요.' };
     }
 
-    const remoteUser = await fetchUserByDisplayName(parsed.nickname, parsed.tag);
-    if (!remoteUser) {
-      return { success: false, message: '일치하는 계정을 찾을 수 없습니다.' };
-    }
+    try {
+      const remoteUser = await fetchUserByDisplayName(parsed.nickname, parsed.tag);
+      if (!remoteUser) {
+        return { success: false, message: '일치하는 계정을 찾을 수 없습니다.' };
+      }
 
-    await saveUser(remoteUser);
-    setUser(remoteUser);
-    return { success: true, message: '' };
+      await clearAllData();
+      await saveUser(remoteUser);
+      setEntryMode('create');
+      setUser(remoteUser);
+      return { success: true, message: '' };
+    } catch {
+      return {
+        success: false,
+        message: '접속에 실패했습니다. 네트워크 연결을 확인해 주세요.',
+      };
+    }
   }, []);
 
   const switchAccount = useCallback(async () => {

@@ -24,7 +24,7 @@ import { colors, radius, spacing } from '@/constants/theme';
 import { useTodoContext } from '@/contexts/TodoProvider';
 import { useUserContext } from '@/contexts/UserProvider';
 import { useToast } from '@/hooks/useToast';
-import { buildTodoActivityBars } from '@/lib/time/activityDistribution';
+import { buildColoredActivityHourBars } from '@/lib/time/activityDistribution';
 import { formatDateDisplay, toDateString } from '@/lib/time/formatTime';
 import { calculateAchievementRate } from '@/lib/time/sortTodos';
 import type { Todo } from '@/types/todo';
@@ -55,7 +55,7 @@ export default function MainScreen() {
 
   const todos = useMemo(() => getTodosForDate(selectedDate), [getTodosForDate, selectedDate]);
   const achievement = useMemo(() => calculateAchievementRate(todos), [todos]);
-  const activityBars = useMemo(() => buildTodoActivityBars(todos), [todos]);
+  const activityBars = useMemo(() => buildColoredActivityHourBars(todos), [todos]);
   const isTodaySelected = useMemo(
     () => isSameDay(startOfDay(selectedDate), startOfDay(new Date())),
     [selectedDate],
@@ -90,8 +90,8 @@ export default function MainScreen() {
   const handleSwitchAccount = async () => {
     setAccountActionError('');
     try {
-      setEntryMode('login');
       await switchAccount();
+      setEntryMode('login');
       navigateToWelcomeScreen();
     } catch {
       setAccountActionError('계정 전환에 실패했습니다. 다시 시도해 주세요.');

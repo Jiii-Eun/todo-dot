@@ -16,7 +16,7 @@ alwaysApply: true
 
 ## 기술 스택
 - Frontend: Expo, React Native, TypeScript
-- Backend: MongoDB REST API (Mongoose, 기본 `http://localhost:5000`)
+- Backend: MongoDB REST API (Mongoose, 프로덕션 `https://todo-dot-server.onrender.com`, 로컬은 `.env` `DEFAULT_API_URL`)
 - Mobile Only, SPA 형태, **화면 전환 최소화 + 모달/Bottom Sheet 중심**
 
 ## 사용자 시스템

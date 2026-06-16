@@ -119,7 +119,7 @@ export default function NicknameScreen() {
     );
   }
 
-  if (user && entryMode !== "login") {
+  if (user) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -143,7 +143,9 @@ export default function NicknameScreen() {
       return;
     }
 
-    setEntryMode("create");
+    if (mode === "create") {
+      setEntryMode("create");
+    }
   };
 
   const switchMode = (nextMode: EntryMode) => {
@@ -235,7 +237,7 @@ export default function NicknameScreen() {
                     • 다른 기기·브라우저에서도 동일하게 접속할 수 있습니다
                   </Text>
 
-                  {!isApiConfigured ? (
+                  {!isApiConfigured() ? (
                     <Text style={styles.infoWarning}>
                       서버 미연동 상태에서는 기기 간 접속이 불가합니다.
                     </Text>

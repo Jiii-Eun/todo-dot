@@ -33,9 +33,9 @@ npm start
 curl http://localhost:5000/health
 ```
 
-### 3. 환경 변수 (선택)
+### 3. 환경 변수
 
-API 주소를 바꿀 때만 `.env`에 설정합니다.
+API 주소는 프로젝트 루트 `.env`에 설정합니다.
 
 ```env
 DEFAULT_API_URL=https://todo-dot-server.onrender.com
@@ -47,10 +47,25 @@ DEFAULT_API_URL=https://todo-dot-server.onrender.com
 DEFAULT_API_URL=http://localhost:5000
 ```
 
-서버 미연결 시에도 **로컬(AsyncStorage)만으로** 동작합니다.
+**동작 방식**
+
+1. `expo start` 시 Node가 `.env`의 `DEFAULT_API_URL`을 읽음
+2. `app.config.js`가 `extra.apiUrl`로 manifest에 주입
+3. `lib/api/client.ts`의 `getApiBaseUrl()`이 `expo-constants` manifest에서 URL을 읽음
+
+> `EXPO_PUBLIC_API_URL`은 사용하지 않습니다. `.env` 변경 후 Expo 개발 서버를 재시작하세요.  
+> 반영이 안 되면 `npx expo start -c`로 캐시를 지우고 다시 시작하세요.
+
+설정 확인:
+
+```bash
+npx expo config --type public | grep apiUrl
+```
+
+서버 미연결 시에도 **로컬(AsyncStorage)만으로** 동작합니다. 기존 계정 접속·기기 간 동기화는 API URL이 앱에 정상 주입되어야 합니다.
 
 > **로컬 개발 참고**
-> - Android 에뮬레이터: `http://10.0.2.2:5000`
+> - Android 에뮬레이터: `DEFAULT_API_URL=http://10.0.2.2:5000`
 > - 실기기: PC IP 주소 사용 (예: `http://192.168.0.10:5000`)
 
 ### 4. 앱 실행
@@ -166,9 +181,10 @@ npx expo export --platform web
 
 ```
 app/                 # expo-router 화면
+app.config.js        # DEFAULT_API_URL → extra.apiUrl
 components/          # UI 컴포넌트
 contexts/            # User, Todo Provider
-lib/api/             # REST API 연동
+lib/api/             # REST API 연동 (client, users, todos)
 lib/local/           # AsyncStorage
 lib/todo/            # 반복 일정 로직
 .cursor/rules/       # Cursor AI 규칙
