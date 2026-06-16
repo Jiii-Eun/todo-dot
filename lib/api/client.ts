@@ -1,6 +1,6 @@
-const DEFAULT_API_URL = 'https://todo-dot-server.onrender.com';
-
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? DEFAULT_API_URL;
+export const API_BASE_URL = (process.env.EXPO_PUBLIC_API_URL ?? "")
+  .trim()
+  .replace(/\/$/, "");
 
 export const isApiConfigured = API_BASE_URL.length > 0;
 
@@ -10,33 +10,36 @@ export class ApiError extends Error {
     message: string,
   ) {
     super(message);
-    this.name = 'ApiError';
+    this.name = "ApiError";
   }
 }
 
-interface ApiRequestOptions extends Omit<RequestInit, 'body'> {
+interface ApiRequestOptions extends Omit<RequestInit, "body"> {
   userId?: string;
   body?: unknown;
 }
 
-export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
+export async function apiRequest<T>(
+  path: string,
+  options: ApiRequestOptions = {},
+): Promise<T> {
   if (!isApiConfigured) {
-    throw new ApiError(0, 'API URL is not configured');
+    throw new ApiError(0, "API URL is not configured");
   }
 
   const { userId, body, headers, ...fetchOptions } = options;
 
   const requestHeaders: Record<string, string> = {
-    Accept: 'application/json',
+    Accept: "application/json",
     ...(headers as Record<string, string> | undefined),
   };
 
   if (body !== undefined) {
-    requestHeaders['Content-Type'] = 'application/json';
+    requestHeaders["Content-Type"] = "application/json";
   }
 
   if (userId) {
-    requestHeaders['X-User-Id'] = userId;
+    requestHeaders["X-User-Id"] = userId;
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -48,7 +51,10 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
   if (!response.ok) {
     let message = response.statusText;
     try {
-      const errorBody = (await response.json()) as { message?: string; error?: string };
+      const errorBody = (await response.json()) as {
+        message?: string;
+        error?: string;
+      };
       message = errorBody.message ?? errorBody.error ?? message;
     } catch {
       try {
@@ -74,8 +80,10 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
 
 export async function checkApiHealth(): Promise<boolean> {
   try {
-    const result = await apiRequest<{ status?: string; mongo?: string }>('/health');
-    return result.status === 'ok' && result.mongo === 'connected';
+    const result = await apiRequest<{ status?: string; mongo?: string }>(
+      "/health",
+    );
+    return result.status === "ok" && result.mongo === "connected";
   } catch {
     return false;
   }
