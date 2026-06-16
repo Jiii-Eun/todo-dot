@@ -1,13 +1,102 @@
 import { endOfDay } from 'date-fns';
-import { normalizeDateString, parseDateString, parseTimeOnDate } from '@/lib/time/formatTime';
+import { normalizeDateString, normalizeTimeString, parseDateString, parseTimeOnDate } from '@/lib/time/formatTime';
 import type { Todo } from '@/types/todo';
 
 const BUCKET_COUNT = 24;
 const MS_PER_MINUTE = 60 * 1000;
 
+/** 할 일 막대용 구분 색상 (id 해시로 안정적으로 배정) */
+const ACTIVITY_BAR_COLORS = [
+  '#8B5CF6',
+  '#3B82F6',
+  '#10B981',
+  '#F59E0B',
+  '#EC4899',
+  '#06B6D4',
+  '#F97316',
+  '#6366F1',
+  '#14B8A6',
+  '#A855F7',
+  '#84CC16',
+  '#E879F9',
+] as const;
+
 export interface ActivityBucket {
   hour: number;
   value: number;
+}
+
+export interface TodoActivityBar {
+  id: string;
+  startMinutes: number;
+  endMinutes: number;
+  lane: number;
+  color: string;
+}
+
+function hashStringToIndex(value: string, mod: number): number {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
+  }
+  return hash % mod;
+}
+
+export function getActivityBarColor(todoId: string): string {
+  return ACTIVITY_BAR_COLORS[hashStringToIndex(todoId, ACTIVITY_BAR_COLORS.length)];
+}
+
+function parseTimeToMinutes(time: string): number {
+  const normalized = normalizeTimeString(time);
+  const [hours, minutes] = normalized.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+function assignActivityBarLanes(
+  bars: Array<Pick<TodoActivityBar, 'id' | 'startMinutes' | 'endMinutes'>>,
+): TodoActivityBar[] {
+  const sorted = [...bars].sort(
+    (a, b) => a.startMinutes - b.startMinutes || a.endMinutes - b.endMinutes,
+  );
+  const laneEnds: number[] = [];
+
+  return sorted.map((bar) => {
+    let lane = laneEnds.findIndex((endMinutes) => endMinutes <= bar.startMinutes);
+    if (lane === -1) {
+      lane = laneEnds.length;
+      laneEnds.push(bar.endMinutes);
+    } else {
+      laneEnds[lane] = bar.endMinutes;
+    }
+
+    return {
+      ...bar,
+      lane,
+      color: getActivityBarColor(bar.id),
+    };
+  });
+}
+
+export function buildTodoActivityBars(todos: Todo[]): TodoActivityBar[] {
+  const seenIds = new Set<string>();
+  const rawBars: Array<Pick<TodoActivityBar, 'id' | 'startMinutes' | 'endMinutes'>> = [];
+
+  for (const todo of todos) {
+    if (!todo.id || seenIds.has(todo.id)) continue;
+    seenIds.add(todo.id);
+
+    const startMinutes = parseTimeToMinutes(todo.startTime);
+    const endMinutes = parseTimeToMinutes(todo.endTime);
+    if (endMinutes <= startMinutes) continue;
+
+    rawBars.push({
+      id: todo.id,
+      startMinutes,
+      endMinutes,
+    });
+  }
+
+  return assignActivityBarLanes(rawBars);
 }
 
 function getHourOverlapMinutes(

@@ -24,7 +24,7 @@ import { colors, radius, spacing } from '@/constants/theme';
 import { useTodoContext } from '@/contexts/TodoProvider';
 import { useUserContext } from '@/contexts/UserProvider';
 import { useToast } from '@/hooks/useToast';
-import { buildActivityDistribution } from '@/lib/time/activityDistribution';
+import { buildTodoActivityBars } from '@/lib/time/activityDistribution';
 import { formatDateDisplay, toDateString } from '@/lib/time/formatTime';
 import { calculateAchievementRate } from '@/lib/time/sortTodos';
 import type { Todo } from '@/types/todo';
@@ -55,7 +55,7 @@ export default function MainScreen() {
 
   const todos = useMemo(() => getTodosForDate(selectedDate), [getTodosForDate, selectedDate]);
   const achievement = useMemo(() => calculateAchievementRate(todos), [todos]);
-  const activityBuckets = useMemo(() => buildActivityDistribution(todos), [todos]);
+  const activityBars = useMemo(() => buildTodoActivityBars(todos), [todos]);
   const isTodaySelected = useMemo(
     () => isSameDay(startOfDay(selectedDate), startOfDay(new Date())),
     [selectedDate],
@@ -186,7 +186,7 @@ export default function MainScreen() {
               sublabel={`${achievement.completed}/${achievement.total} 완료`}
             />
             <View style={styles.chartWrap}>
-              <ActivityBarChart buckets={activityBuckets} />
+              <ActivityBarChart bars={activityBars} />
             </View>
             <Pressable style={styles.fab} onPress={openCreateForm}>
               <Text style={styles.fabText}>+ 할 일 추가</Text>

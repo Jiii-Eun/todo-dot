@@ -7,39 +7,48 @@ import Animated, {
 } from 'react-native-reanimated';
 import {
   ACTIVITY_AXIS_LABELS,
-  type ActivityBucket,
+  type TodoActivityBar,
 } from '@/lib/time/activityDistribution';
 import { motion } from '@/constants/motion';
 import { colors, spacing } from '@/constants/theme';
 
 interface ActivityBarChartProps {
-  buckets: ActivityBucket[];
+  bars: TodoActivityBar[];
 }
 
-const REF_CHART_WIDTH = 280;
 const CHART_HEIGHT = 80;
 const AXIS_HOUR_MAX = 24;
-const BAR_WIDTH = REF_CHART_WIDTH / AXIS_HOUR_MAX - 1;
-const BAR_WIDTH_PERCENT = (BAR_WIDTH / REF_CHART_WIDTH) * 100;
+const MINUTES_PER_DAY = AXIS_HOUR_MAX * 60;
+const USABLE_HEIGHT = CHART_HEIGHT - 10;
+const LANE_GAP = 2;
+const MIN_BAR_WIDTH_PERCENT = 0.8;
 
 interface AnimatedChartBarProps {
-  targetHeight: number;
-  hour: number;
+  bar: TodoActivityBar;
+  barHeight: number;
 }
 
-function AnimatedChartBar({ targetHeight, hour }: AnimatedChartBarProps) {
+function AnimatedChartBar({ bar, barHeight }: AnimatedChartBarProps) {
   const height = useSharedValue(0);
 
   useEffect(() => {
-    height.value = withTiming(targetHeight, {
+    height.value = withTiming(barHeight, {
       duration: motion.normal,
       easing: motion.easing,
     });
-  }, [height, targetHeight]);
+  }, [barHeight, height]);
+
+  const durationMinutes = bar.endMinutes - bar.startMinutes;
+  const leftPercent = (bar.startMinutes / MINUTES_PER_DAY) * 100;
+  const widthPercent = Math.max(
+    MIN_BAR_WIDTH_PERCENT,
+    (durationMinutes / MINUTES_PER_DAY) * 100,
+  );
+  const bottom = bar.lane * (barHeight + LANE_GAP);
 
   const animatedStyle = useAnimatedStyle(() => ({
     height: height.value,
-    backgroundColor: colors.primaryLight,
+    backgroundColor: bar.color,
   }));
 
   return (
@@ -47,8 +56,9 @@ function AnimatedChartBar({ targetHeight, hour }: AnimatedChartBarProps) {
       style={[
         styles.bar,
         {
-          left: `${(hour / AXIS_HOUR_MAX) * 100}%`,
-          width: `${BAR_WIDTH_PERCENT}%`,
+          left: `${leftPercent}%`,
+          width: `${widthPercent}%`,
+          bottom,
         },
         animatedStyle,
       ]}
@@ -81,9 +91,9 @@ function HourGridLines() {
   );
 }
 
-export function ActivityBarChart({ buckets }: ActivityBarChartProps) {
-  const maxValue = Math.max(1, ...buckets.map((bucket) => bucket.value));
-  const activeBuckets = buckets.filter((bucket) => bucket.value > 0);
+export function ActivityBarChart({ bars }: ActivityBarChartProps) {
+  const maxLanes = Math.max(1, ...bars.map((bar) => bar.lane + 1));
+  const barHeight = (USABLE_HEIGHT - (maxLanes - 1) * LANE_GAP) / maxLanes;
 
   return (
     <View style={styles.container}>
@@ -91,20 +101,9 @@ export function ActivityBarChart({ buckets }: ActivityBarChartProps) {
       <View style={styles.plotArea}>
         <View style={styles.chart}>
           <HourGridLines />
-          {activeBuckets.map((bucket) => {
-            const barHeight = Math.max(
-              4,
-              (bucket.value / maxValue) * (CHART_HEIGHT - 10),
-            );
-
-            return (
-              <AnimatedChartBar
-                key={bucket.hour}
-                hour={bucket.hour}
-                targetHeight={barHeight}
-              />
-            );
-          })}
+          {bars.map((bar) => (
+            <AnimatedChartBar key={bar.id} bar={bar} barHeight={barHeight} />
+          ))}
         </View>
         <View style={styles.axis}>
           {ACTIVITY_AXIS_LABELS.map((hour) => (
@@ -149,7 +148,6 @@ const styles = StyleSheet.create({
   },
   bar: {
     position: 'absolute',
-    bottom: 0,
     borderRadius: 2,
   },
   axis: {
