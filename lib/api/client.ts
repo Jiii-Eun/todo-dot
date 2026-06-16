@@ -1,6 +1,12 @@
-export const API_BASE_URL = (process.env.EXPO_PUBLIC_API_URL ?? "")
-  .trim()
-  .replace(/\/$/, "");
+import Constants from 'expo-constants';
+
+function resolveApiBaseUrl(): string {
+  const extra = Constants.expoConfig?.extra as { apiUrl?: string } | undefined;
+  const raw = extra?.apiUrl ?? '';
+  return raw.trim().replace(/\/$/, '');
+}
+
+export const API_BASE_URL = resolveApiBaseUrl();
 
 export const isApiConfigured = API_BASE_URL.length > 0;
 

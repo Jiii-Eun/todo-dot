@@ -35,11 +35,16 @@ curl http://localhost:5000/health
 
 ### 3. 환경 변수 (선택)
 
-API 주소를 바꿀 때만 `.env`에 설정합니다. 기본값은 `https://todo-dot-server.onrender.com`입니다.
+API 주소를 바꿀 때만 `.env`에 설정합니다.
 
 ```env
-# 로컬 백엔드 사용 시
-EXPO_PUBLIC_API_URL=http://localhost:5000
+DEFAULT_API_URL=https://todo-dot-server.onrender.com
+```
+
+로컬 백엔드 사용 시:
+
+```env
+DEFAULT_API_URL=http://localhost:5000
 ```
 
 서버 미연결 시에도 **로컬(AsyncStorage)만으로** 동작합니다.
